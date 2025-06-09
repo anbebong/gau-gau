@@ -1,1 +1,4 @@
 bin/
+*.log
+secret.key
+server_keys.json
