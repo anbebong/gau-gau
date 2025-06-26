@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hệ thống quản lý người dùng</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <!-- Login Page -->
+    <div id="loginPage" class="page active">
+        <div class="login-container">
+            <div class="login-form">
+                <h2>Đăng nhập hệ thống</h2>
+                <form id="loginForm">
+                    <div class="form-group">
+                        <label for="username">Tên đăng nhập:</label>
+                        <input type="text" id="username" name="username" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="password">Mật khẩu:</label>
+                        <input type="password" id="password" name="password" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Đăng nhập</button>
+                </form>
+                <div id="loginError" class="error-message"></div>
+
+                <div class="demo-accounts">
+                    <h4>Tài khoản demo:</h4>
+                    <p><strong>Admin:</strong> admin / admin123</p>
+                    <p><strong>User:</strong> user / user123</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin Dashboard -->
+    <div id="adminDashboard" class="page">
+        <nav class="navbar">
+            <div class="nav-brand">
+                <h3>Admin Dashboard - Quản lý hệ thống</h3>
+            </div>
+            <div class="nav-user">
+                <span id="adminUsername"></span>
+                <button id="adminLogout" class="btn btn-secondary">Đăng xuất</button>
+            </div>
+        </nav>
+
+        <div class="dashboard-container">
+            <div class="sidebar">
+                <ul class="nav-menu">
+                    <li><a href="#" data-section="overview" class="nav-link active">Tổng quan</a></li>
+                    <li><a href="#" data-section="devices" class="nav-link">Quản lý thiết bị</a></li>
+                    <li><a href="#" data-section="users" class="nav-link">Quản lý người dùng</a></li>
+                    <li><a href="#" data-section="alerts" class="nav-link">Cảnh báo</a></li>
+                    <li><a href="#" data-section="reports" class="nav-link">Báo cáo</a></li>
+                    <li><a href="#" data-section="settings" class="nav-link">Cài đặt</a></li>
+                </ul>
+            </div>
+
+            <div class="main-content">
+                <!-- Overview Section -->
+                <div id="overview" class="content-section active">
+                    <div class="section-header">
+                        <h2>Tổng quan hệ thống</h2>
+                        <button class="btn btn-sm btn-secondary" id="reloadOverviewBtn" title="Tải lại">
+                            <svg width="20" height="20" viewBox="0 0 20 20" fill="none"
+                                xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle;">
+                                <path d="M4 10a6 6 0 1 1 6 6" stroke="currentColor" stroke-width="2" fill="none"
+                                    stroke-linecap="round" />
+                                <path d="M4 10V6m0 4h4" stroke="currentColor" stroke-width="2" fill="none"
+                                    stroke-linecap="round" />
+                            </svg>
+                        </button>
+                    </div>
+
+                    <!-- Stats Cards -->
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-icon pc-icon">
+                                <svg width="32" height="32" viewBox="0 0 32 32" fill="none" style="vertical-align:middle;"
+                                    xmlns="http://www.w3.org/2000/svg">
+                                    <defs>
+                                        <linearGradient id="pcGradient" x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse">
+                                            <stop stop-color="#667eea"/>
+                                            <stop offset="1" stop-color="#764ba2"/>
+                                        </linearGradient>
+                                    </defs>
+                                    <rect x="5" y="9" width="22" height="12" rx="2.5" stroke="url(#pcGradient)" stroke-width="2.2" fill="#fff"/>
+                                    <rect x="2" y="23" width="28" height="3" rx="1.5" fill="url(#pcGradient)"/>
+                                    <rect x="10" y="25" width="12" height="1.5" rx="0.75" fill="#fff"/>
+                                    <circle cx="16" cy="20" r="1.2" fill="#667eea"/>
+                                </svg>
+                            </div>
+                            <h3>Thiết bị PC</h3>
+                            <div class="stat-number" id="totalPCs">156</div>
+                            <div class="stat-detail">
+                                <span class="online">124 Online</span> |
+                                <span class="offline">32 Offline</span>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon user-icon">
+                                <svg width="32" height="32" viewBox="0 0 24 24" fill="none"
+                                    style="vertical-align:middle;" xmlns="http://www.w3.org/2000/svg">
+                                    <circle cx="9" cy="7" r="4" stroke="#667eea" stroke-width="2" fill="#fff" />
+                                    <path d="M17 11c1.656 0 3-1.567 3-3.5S18.656 4 17 4" stroke="#667eea"
+                                        stroke-width="2" fill="none" />
+                                    <path d="M2 20v-1c0-2.21 3.134-4 7-4s7 1.79 7 4v1" stroke="#667eea" stroke-width="2"
+                                        fill="none" />
+                                    <path d="M17 20v-1c0-1.105-.895-2-2-2" stroke="#667eea" stroke-width="2"
+                                        fill="none" />
+                                </svg>
+                            </div>
+                            <h3>Người dùng</h3>
+                            <div class="stat-number" id="totalUsers">89</div>
+                            <div class="stat-detail">
+                                <span class="active-users">67 Đang hoạt động</span>
+                            </div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon alert-icon">⚠️</div>
+                            <h3>Cảnh báo</h3>
+                            <div class="stat-number alert-number" id="totalAlerts">12</div>
+                            <div class="stat-detail">
+                                <span class="critical">3 Nghiêm trọng</span> |
+                                <span class="warning">9 Cảnh báo</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Device Logs Section -->
+                    <div class="logs-container">
+                        <div class="logs-header">
+                            <h3>Log hệ thống</h3>
+                            <div class="logs-controls">
+                                <select id="deviceFilter" class="form-control-sm">
+                                    <!-- Options will be dynamically loaded by JavaScript -->
+                                    <option value="all">Tất cả Agent</option>
+                                </select>
+                                <!-- Removed refreshLogs button as per user request -->
+                            </div>
+                        </div>
+
+                        <!-- Log Content -->
+                        <div class="log-content">
+                            <div class="log-table-container">
+                                <table class="log-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Thời gian</th>
+                                            <th>Thiết bị</th>
+                                            <th>Mức độ</th>
+                                            <th>Sự kiện</th>
+                                            <th>Chi tiết</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="systemLogs">
+                                        <!-- Dữ liệu log sẽ được tải bởi JavaScript -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Devices Section -->
+                <div id="devices" class="content-section">
+                    <div class="section-header">
+                        <h2>Quản lý thiết bị</h2>
+                        <div class="header-actions">
+                            <button class="btn btn-primary btn-sm" id="addDeviceBtn">+ Thêm thiết bị</button>
+                            <button class="btn btn-sm btn-secondary" id="reloadDevicesBtn" title="Tải lại">
+                                <svg width="20" height="20" viewBox="0 0 20 20" fill="none"
+                                    xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle;">
+                                    <path d="M4 10a6 6 0 1 1 6 6" stroke="currentColor" stroke-width="2" fill="none"
+                                        stroke-linecap="round" />
+                                    <path d="M4 10V6m0 4h4" stroke="currentColor" stroke-width="2" fill="none"
+                                        stroke-linecap="round" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="table-container">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Agent ID</th>
+                                    <th>Device Name</th>
+                                    <th>IP Address</th>
+                                    <th>Hardware ID</th>
+                                    <th>Người dùng được gán</th>
+                                    <th>Trạng thái</th>
+                                    <th>Thao tác</th>
+                                </tr>
+                            </thead>
+                            <tbody id="devicesTable">
+                                <!-- Dữ liệu thiết bị sẽ được tải bởi JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Device Edit Modal -->
+                    <div id="deviceModal" class="modal">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h3 id="modalTitle">Chỉnh sửa thiết bị</h3>
+                                <span class="close" onclick="closeDeviceModal()">&times;</span>
+                            </div>
+                            <div class="modal-body">
+                                <form id="deviceForm">
+                                    <div class="form-group">
+                                        <label>Device Name:</label>
+                                        <input type="text" id="deviceId" class="form-control" readonly>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>IP Address:</label>
+                                        <input type="text" id="deviceIp" class="form-control" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Hardware ID:</label>
+                                        <input type="text" id="deviceHardwareId" class="form-control" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Agent ID:</label>
+                                        <input type="text" id="deviceAgentId" class="form-control" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Gán cho người dùng:</label>
+                                        <select id="deviceUser" class="form-control">
+                                            <option value="">Chưa gán</option>
+                                            <option value="admin">admin</option>
+                                            <option value="user01">user01</option>
+                                            <option value="user02">user02</option>
+                                        </select>
+                                    </div>
+                                </form>
+                            </div>
+                            <div class="modal-footer">
+                                <button class="btn btn-danger" onclick="closeDeviceModal()">Hủy</button>
+                                <button class="btn btn-primary" onclick="saveDevice()">Lưu</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Users Section -->
+                <div id="users" class="content-section">
+                    <div class="section-header">
+                        <h2>Quản lý người dùng</h2>
+                        <div class="header-actions">
+                            <button class="btn btn-primary btn-sm" id="addUserBtn">+ Thêm người dùng</button>
+                            <button class="btn btn-sm btn-secondary" id="reloadUsersBtn" title="Tải lại">
+                                <svg width="20" height="20" viewBox="0 0 20 20" fill="none"
+                                    xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle;">
+                                    <path d="M4 10a6 6 0 1 1 6 6" stroke="currentColor" stroke-width="2" fill="none"
+                                        stroke-linecap="round" />
+                                    <path d="M4 10V6m0 4h4" stroke="currentColor" stroke-width="2" fill="none"
+                                        stroke-linecap="round" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="table-container">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Username</th>
+                                    <th>Email</th>
+                                    <th>Tên</th>
+                                    <th>Vai trò</th>
+                                    <th>Thiết bị được gán</th>
+                                    <th>Thao tác</th>
+                                </tr>
+                            </thead>
+                            <tbody id="usersTable">
+                                <!-- Dữ liệu người dùng sẽ được tải bởi JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- User Create/Edit Modal -->
+                    <div id="userModal" class="modal">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h3 id="userModalTitle">Thêm người dùng mới</h3>
+                                <span class="close" onclick="closeUserModal()">&times;</span>
+                            </div>
+                            <div class="modal-body">
+                                <form id="userForm">
+                                    <div class="form-group">
+                                        <label>Username:</label>
+                                        <input type="text" id="userUsername" class="form-control" required>
+                                    </div>
+                                    <div class="form-group" id="passwordGroup">
+                                        <label>Mật khẩu:</label>
+                                        <input type="password" id="userPassword" class="form-control" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Email:</label>
+                                        <input type="email" id="userEmail" class="form-control" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Tên:</label>
+                                        <input type="text" id="userName" class="form-control" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Vai trò:</label>
+                                        <select id="userRole" class="form-control" required>
+                                            <option value="">Chọn vai trò</option>
+                                            <option value="admin">Admin</option>
+                                            <option value="user">User</option>
+                                        </select>
+                                    </div>
+                                </form>
+                            </div>
+                            <div class="modal-footer">
+                                <button class="btn btn-danger" onclick="closeUserModal()">Hủy</button>
+                                <button class="btn btn-primary" onclick="saveUser()">Lưu</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Change Password Modal -->
+                    <div id="passwordModal" class="modal">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h3>Đổi mật khẩu</h3>
+                                <span class="close" onclick="closePasswordModal()">&times;</span>
+                            </div>
+                            <div class="modal-body">
+                                <form id="passwordForm">
+                                    <div class="form-group">
+                                        <label>Username:</label>
+                                        <input type="text" id="changePasswordUsername" class="form-control" readonly>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Mật khẩu cũ:</label>
+                                        <input type="password" id="oldPassword" class="form-control" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Mật khẩu mới:</label>
+                                        <input type="password" id="newPassword" class="form-control" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Xác nhận mật khẩu mới:</label>
+                                        <input type="password" id="confirmPassword" class="form-control" required>
+                                    </div>
+                                </form>
+                            </div>
+                            <div class="modal-footer">
+                                <button class="btn btn-secondary" onclick="closePasswordModal()">Hủy</button>
+                                <button class="btn btn-primary" onclick="savePassword()">Đổi mật khẩu</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Alerts Section -->
+                <div id="alerts" class="content-section">
+                    <div class="section-header">
+                        <h2>Cảnh báo hệ thống</h2>
+                        <button class="btn btn-sm btn-secondary" id="reloadAlertsBtn" title="Tải lại">
+                            <svg width="20" height="20" viewBox="0 0 20 20" fill="none"
+                                xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle;">
+                                <path d="M4 10a6 6 0 1 1 6 6" stroke="currentColor" stroke-width="2" fill="none"
+                                    stroke-linecap="round" />
+                                <path d="M4 10V6m0 4h4" stroke="currentColor" stroke-width="2" fill="none"
+                                    stroke-linecap="round" />
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="empty-state">
+                        <h3>Tính năng Cảnh báo đang được phát triển</h3>
+                        <p>Chúng tôi đang nỗ lực để mang đến cho bạn một hệ thống cảnh báo mạnh mẽ. Vui lòng quay lại
+                            sau!</p>
+                    </div>
+                </div>
+
+                <!-- Reports Section -->
+                <div id="reports" class="content-section">
+                    <div class="section-header">
+                        <h2>Báo cáo</h2>
+                        <button class="btn btn-sm btn-secondary" id="reloadReportsBtn" title="Tải lại">
+                            <svg width="20" height="20" viewBox="0 0 20 20" fill="none"
+                                xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle;">
+                                <path d="M4 10a6 6 0 1 1 6 6" stroke="currentColor" stroke-width="2" fill="none"
+                                    stroke-linecap="round" />
+                                <path d="M4 10V6m0 4h4" stroke="currentColor" stroke-width="2" fill="none"
+                                    stroke-linecap="round" />
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="empty-state">
+                        <h3>Tính năng Báo cáo đang được phát triển</h3>
+                        <p>Các báo cáo chi tiết sẽ sớm có mặt tại đây. Hãy chờ đón nhé!</p>
+                    </div>
+                </div>
+
+                <!-- Settings Section -->
+                <div id="settings" class="content-section">
+                    <div class="section-header">
+                        <h2>Cài đặt hệ thống</h2>
+                        <button class="btn btn-sm btn-secondary" id="reloadSettingsBtn" title="Tải lại">
+                            <svg width="20" height="20" viewBox="0 0 20 20" fill="none"
+                                xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle;">
+                                <path d="M4 10a6 6 0 1 1 6 6" stroke="currentColor" stroke-width="2" fill="none"
+                                    stroke-linecap="round" />
+                                <path d="M4 10V6m0 4h4" stroke="currentColor" stroke-width="2" fill="none"
+                                    stroke-linecap="round" />
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="settings-form">
+                        <div class="form-group">
+                            <label>Tên hệ thống:</label>
+                            <input type="text" value="Hệ thống quản lý PC" class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <label for="alertLevel">Mức độ cảnh báo mặc định:</label>
+                            <select id="alertLevel" class="form-control">
+                                <option value="info">Thông tin (Info)</option>
+                                <option value="warning">Cảnh báo (Warning)</option>
+                                <option value="error">Lỗi (Error)</option>
+                                <option value="critical">Nghiêm trọng (Critical)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="alertEmail">Email nhận cảnh báo:</label>
+                            <input type="email" id="alertEmail" value="admin@example.com" class="form-control">
+                        </div>
+                        <button class="btn btn-primary">Lưu cài đặt</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- User Dashboard -->
+    <div id="userDashboard" class="page">
+        <nav class="navbar">
+            <div class="nav-brand">
+                <h3>User Dashboard</h3>
+            </div>
+            <div class="nav-user">
+                <span id="userUsername"></span>
+                <button id="userLogout" class="btn btn-secondary">Đăng xuất</button>
+            </div>
+        </nav>
+
+        <div class="dashboard-container">
+            <div class="sidebar">
+                <ul class="nav-menu">
+                    <li><a href="#" data-section="user-overview" class="nav-link active">Tổng quan cá nhân</a></li>
+                </ul>
+            </div>
+
+            <div class="main-content">
+                <!-- Combined User Overview Section -->
+                <div id="user-overview" class="content-section active">
+                    <div class="section-header">
+                        <h2>Thông tin cá nhân và thiết bị</h2>
+                        <button class="btn btn-sm btn-secondary" id="reloadUserOverviewBtn" title="Tải lại">
+                            <svg width="20" height="20" viewBox="0 0 20 20" fill="none"
+                                xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle;">
+                                <path d="M4 10a6 6 0 1 1 6 6" stroke="currentColor" stroke-width="2" fill="none"
+                                    stroke-linecap="round" />
+                                <path d="M4 10V6m0 4h4" stroke="currentColor" stroke-width="2" fill="none"
+                                    stroke-linecap="round" />
+                            </svg>
+                        </button>
+                    </div>
+
+                    <div class="user-details-container">
+                        <!-- User Profile Form -->
+                        <div class="profile-form">
+                            <h3>Hồ sơ cá nhân</h3>
+                            <div class="form-group">
+                                <label>Tên đăng nhập:</label>
+                                <input type="text" id="userProfileUsername" class="form-control" readonly>
+                            </div>
+                            <div class="form-group">
+                                <label>Email:</label>
+                                <input type="email" id="userProfileEmail" class="form-control">
+                            </div>
+                            <div class="form-group">
+                                <label>Họ tên:</label>
+                                <input type="text" id="userProfileName" class="form-control">
+                            </div>
+                            <button class="btn btn-primary" id="updateUserProfileBtn">Cập nhật thông tin</button>
+                        </div>
+
+                        <!-- User Assigned Device Form -->
+                        <div class="profile-form">
+                            <h3>Thông tin thiết bị được gán</h3>
+                            <div id="userDeviceInfoContent">
+                                <div class="form-group">
+                                    <label>Agent ID:</label>
+                                    <input type="text" id="userDeviceInfoAgentId" class="form-control" readonly>
+                                </div>
+                                <div class="form-group">
+                                    <label>Tên thiết bị:</label>
+                                    <input type="text" id="userDeviceInfoName" class="form-control" readonly>
+                                </div>
+                                <div class="form-group">
+                                    <label>Địa chỉ IP:</label>
+                                    <input type="text" id="userDeviceInfoIp" class="form-control" readonly>
+                                </div>
+                                <div class="form-group">
+                                    <label>Hardware ID:</label>
+                                    <input type="text" id="userDeviceInfoHardwareId" class="form-control" readonly>
+                                </div>
+                                <div class="form-group">
+                                    <label>Trạng thái:</label>
+                                    <input type="text" id="userDeviceInfoStatus" class="form-control" readonly>
+                                </div>
+                                <div class="form-group button-group-flex">
+                                    <button class="btn btn-primary" id="userGetOtpBtn">Lấy OTP</button>
+                                </div>
+                            </div>
+                            <div id="userDeviceInfoEmpty" class="empty-state" style="display: none;">
+                                <h3>Bạn chưa được gán thiết bị nào.</h3>
+                                <p>Vui lòng liên hệ quản trị viên để được hỗ trợ.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- User Device Logs Container -->
+                    <div id="userDeviceLogsContainer" class="log-table-container" style="margin-top: 1.5rem;">
+                        <h3>Log thiết bị</h3>
+                        <table class="log-table">
+                            <thead>
+                                <tr>
+                                    <th>Thời gian</th>
+                                    <th>Thiết bị</th>
+                                    <th>Mức độ</th>
+                                    <th>Sự kiện</th>
+                                    <th>Chi tiết</th>
+                                </tr>
+                            </thead>
+                            <tbody id="userDeviceLogsTable">
+                                <!-- Logs will be loaded here -->
+                            </tbody>
+                        </table>
+                        <div id="userDeviceLogsEmpty" class="empty-state" style="display: none; padding: 1rem;">
+                            <h3>Không có log nào cho thiết bị này.</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="app-footer">
+        <p>&copy; 2025 an.pt </p>
+    </footer>
+    <script src="script.js"></script>
+</body>
+
+</html>
