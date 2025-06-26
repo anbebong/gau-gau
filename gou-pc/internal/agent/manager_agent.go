@@ -14,7 +14,9 @@ type ManagedClient struct {
 	ClientID   string     `json:"client_id"`
 	AgentID    string     `json:"agent_id"`
 	DeviceInfo DeviceInfo `json:"device_info"`
-	UserID     string     `json:"user_id"` // user sở hữu client này
+	UserID     string     `json:"user_id"`
+	LastSeen   string     `json:"last_seen"` // ISO8601 string
+	Online     bool       `json:"online"`
 }
 
 var (

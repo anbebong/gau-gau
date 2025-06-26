@@ -89,6 +89,23 @@ func main() {
 		a.Conn,
 	)
 
+	// Gửi hello định kỳ 10s
+	go func() {
+		ticker := time.NewTicker(10 * time.Second)
+		defer ticker.Stop()
+		for {
+			helloMsg := agent.Message{
+				Type: agent.TypeHello,
+				Data: agent.AgentMessageData{
+					AgentID: clientInfo.AgentID,
+					Payload: nil,
+				},
+			}
+			_ = a.Send(helloMsg)
+			<-ticker.C
+		}
+	}()
+
 	// Sau khi demo xong mới bắt đầu gửi log song song
 	go a.WatchLogAndSend(cfg.EventLog, cfg.Interval, clientInfo.AgentID)
 
