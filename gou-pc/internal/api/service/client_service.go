@@ -25,6 +25,8 @@ type ManagedClientResponse struct {
 	AgentID    string           `json:"agent_id"`
 	DeviceInfo agent.DeviceInfo `json:"device_info"`
 	Username   string           `json:"username"`
+	LastSeen   string           `json:"last_seen"` // ISO8601 string
+	Online     bool             `json:"online"`
 }
 
 type clientServiceImpl struct {
@@ -81,6 +83,8 @@ func (s *clientServiceImpl) mapClientToResponse(c agent.ManagedClient) ManagedCl
 		AgentID:    c.AgentID,
 		DeviceInfo: c.DeviceInfo,
 		Username:   username,
+		LastSeen:   c.LastSeen,
+		Online:     c.Online,
 	}
 }
 

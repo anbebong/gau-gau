@@ -11,11 +11,42 @@ import (
 	"io"
 	"net"
 	"os"
+	"sync"
 	"time"
 )
 
 // Định nghĩa struct cho log archive
 type ArchiveLogEntry = logcollector.ArchiveLogEntry
+
+var (
+	helloLastSeen   = make(map[string]time.Time)
+	helloLastSeenMu sync.RWMutex
+)
+
+// Hàm cập nhật trạng thái online/offline và last_seen (dạng chuỗi) cho agent
+func UpdateAgentStatusAndLog(cfg *config.ServerConfig) {
+	for {
+		offline := []string{}
+		clients, _ := agent.LoadClients(cfg.ClientDBFile)
+		now := time.Now()
+		helloLastSeenMu.RLock()
+		for i, c := range clients {
+			last, ok := helloLastSeen[c.AgentID]
+			isOnline := ok && now.Sub(last) <= 30*time.Second
+			if !isOnline {
+				offline = append(offline, c.AgentID)
+			}
+			clients[i].Online = isOnline
+			if isOnline {
+				clients[i].LastSeen = last.Format("02-01-2006 15:04:05")
+			}
+		}
+		helloLastSeenMu.RUnlock()
+		_ = agent.SaveClients(cfg.ClientDBFile, clients)
+		logutil.Info("Agent offline (quá 30s không gửi hello): %v", offline)
+		time.Sleep(30 * time.Second)
+	}
+}
 
 func Start(cfg *config.ServerConfig) error {
 	ln, err := net.Listen("tcp", cfg.ListenAddr)
@@ -25,6 +56,8 @@ func Start(cfg *config.ServerConfig) error {
 	}
 	defer ln.Close()
 	logutil.Info("TCP server (AES) listening on %s", cfg.ListenAddr)
+	// Goroutine log agent offline mỗi 10s
+	go UpdateAgentStatusAndLog(cfg)
 	for {
 		conn, err := ln.Accept()
 		if err != nil {
@@ -130,6 +163,11 @@ func handleConn(conn net.Conn, cfg *config.ServerConfig) {
 					agentID = v
 				}
 			}
+			if agentID != "" {
+				helloLastSeenMu.Lock()
+				helloLastSeen[agentID] = time.Now()
+				helloLastSeenMu.Unlock()
+			}
 			logutil.Info("[HELLO] from agent_id=%s, data=%v", agentID, req.Data)
 			resp = agent.Message{
 				Type: agent.TypeHello,
@@ -207,6 +245,3 @@ func getAgentIDFromMsg(msg agent.Message) interface{} {
 	}
 	return nil
 }
-
-// LoadArchiveLogs đọc toàn bộ log từ file archive.log
-var LoadArchiveLogs = logcollector.LoadArchiveLogs

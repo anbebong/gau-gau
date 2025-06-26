@@ -16,7 +16,7 @@ func main() {
 	var testLog []map[string]interface{} // slice lưu log từng API
 
 	// 1. Login
-	loginReq := map[string]string{"username": "admin", "password": "admin123"}
+	loginReq := map[string]string{"username": "admin", "password": "1"}
 	loginResp := postJSON("/login", loginReq)
 	fmt.Println("[POST] /login\nInput:", loginReq, "\nOutput:", loginResp, "\n")
 	testLog = append(testLog, map[string]interface{}{

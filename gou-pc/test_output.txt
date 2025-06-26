@@ -1,0 +1,193 @@
+[
+    {
+        "api": "/login",
+        "input": {
+            "password": "1",
+            "username": "admin"
+        },
+        "method": "POST",
+        "output": {
+            "data": {
+                "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NTA5MzEzMjYsInJvbGUiOiJhZG1pbiIsInVzZXJfaWQiOiJiMWUyYzNkNC01Njc4LTEyMzQtOWFiYy0xMjM0NTY3ODkwYWIiLCJ1c2VybmFtZSI6ImFkbWluIn0.FM-6IB0RsDTdO7myU7ZsbDEM1sP5bG7qS9yATmM_U9M",
+                "user": {
+                    "created_at": "2024-01-01T00:00:00Z",
+                    "email": "admin@example.com",
+                    "full_name": "Administrator",
+                    "id": "b1e2c3d4-5678-1234-9abc-1234567890ab",
+                    "role": "admin",
+                    "updated_at": "2024-01-01T00:00:00Z",
+                    "username": "admin"
+                }
+            },
+            "success": true
+        }
+    },
+    {
+        "api": "/users",
+        "input": "(token)",
+        "method": "GET",
+        "output": {
+            "data": [
+                {
+                    "created_at": "2024-01-01T00:00:00Z",
+                    "email": "admin@example.com",
+                    "full_name": "Administrator",
+                    "id": "b1e2c3d4-5678-1234-9abc-1234567890ab",
+                    "role": "admin",
+                    "updated_at": "2024-01-01T00:00:00Z",
+                    "username": "admin"
+                },
+                {
+                    "created_at": "2024-01-02T00:00:00Z",
+                    "email": "user1@example.com",
+                    "full_name": "An PT",
+                    "id": "c2f3e4d5-6789-2345-0bcd-2345678901bc",
+                    "role": "user",
+                    "updated_at": "2024-01-02T00:00:00Z",
+                    "username": "an"
+                },
+                {
+                    "created_at": "2025-06-26T16:05:57.6087485+07:00",
+                    "email": "testuser1@example.com",
+                    "full_name": "Test User 1",
+                    "id": "1eb99e9b-4f90-4701-b55c-4d52157898ab",
+                    "role": "user",
+                    "updated_at": "2025-06-26T16:05:57.6087485+07:00",
+                    "username": "testuser1"
+                }
+            ],
+            "success": true
+        }
+    },
+    {
+        "api": "/clients",
+        "input": "(token)",
+        "method": "GET",
+        "output": {
+            "data": [
+                {
+                    "agent_id": "001",
+                    "client_id": "0b707843-948f-46e0-a646-8214077e3e56",
+                    "device_info": {
+                        "hardwareID": "57a0bc54-7cba-4eb1-bba5-9b71338f0af9",
+                        "hostName": "PC-AN",
+                        "ipAddress": "192.168.15.12",
+                        "macAddress": "f8:b1:56:da:be:db"
+                    },
+                    "last_seen": "",
+                    "online": false,
+                    "username": "an"
+                },
+                {
+                    "agent_id": "002",
+                    "client_id": "47f29691-540b-44b7-8773-99ef0f619c26",
+                    "device_info": {
+                        "hardwareID": "41958818-4def-4b5f-adb2-2b8e3409868c",
+                        "hostName": "DESKTOP-AN",
+                        "ipAddress": "169.254.135.88",
+                        "macAddress": "00:50:56:c0:00:01"
+                    },
+                    "last_seen": "26-06-2025 16:15:02",
+                    "online": false,
+                    "username": ""
+                }
+            ],
+            "success": true
+        }
+    },
+    {
+        "api": "/clients/assign-user",
+        "input": {
+            "agent_id": "001",
+            "username": "an"
+        },
+        "method": "POST",
+        "output": {
+            "data": {
+                "message": "user assigned to client successfully"
+            },
+            "success": true
+        }
+    },
+    {
+        "api": "/logs/archive",
+        "input": "(token)",
+        "method": "GET",
+        "output": [
+            {
+                "agent_id": "002",
+                "message": "222",
+                "time": "2025-06-26T15:27:19+07:00"
+            },
+            {
+                "agent_id": "002",
+                "message": "\r",
+                "time": "2025-06-26T15:29:34+07:00"
+            },
+            {
+                "agent_id": "002",
+                "message": "d",
+                "time": "2025-06-26T15:29:36+07:00"
+            }
+        ]
+    },
+    {
+        "api": "/login",
+        "input": {
+            "password": "testpass1",
+            "username": "testuser1"
+        },
+        "method": "POST",
+        "output": {
+            "data": {
+                "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NTA5MzEzMjYsInJvbGUiOiJ1c2VyIiwidXNlcl9pZCI6IjFlYjk5ZTliLTRmOTAtNDcwMS1iNTVjLTRkNTIxNTc4OThhYiIsInVzZXJuYW1lIjoidGVzdHVzZXIxIn0.AGN_B5CQgv_z4Qu6D1dmSvP8TXnwpEQgY2zIibqZ6y8",
+                "user": {
+                    "created_at": "2025-06-26T16:05:57.6087485+07:00",
+                    "email": "testuser1@example.com",
+                    "full_name": "Test User 1",
+                    "id": "1eb99e9b-4f90-4701-b55c-4d52157898ab",
+                    "role": "user",
+                    "updated_at": "2025-06-26T16:05:57.6087485+07:00",
+                    "username": "testuser1"
+                }
+            },
+            "success": true
+        }
+    },
+    {
+        "api": "/clients/assign-user",
+        "input": {
+            "agent_id": "001",
+            "username": "testuser1"
+        },
+        "method": "POST",
+        "output": {
+            "data": {
+                "message": "user assigned to client successfully"
+            },
+            "success": true
+        }
+    },
+    {
+        "api": "/logs/my-device",
+        "input": "(user token)",
+        "method": "GET",
+        "output": {
+            "error": "User chưa được gán thiết bị hoặc không tìm thấy agent_id",
+            "success": false
+        }
+    },
+    {
+        "api": "/clients/001/otp",
+        "input": "(token)",
+        "method": "GET",
+        "output": {
+            "data": {
+                "agent_id": "001",
+                "expire_in": 14,
+                "otp": "828572"
+            },
+            "success": true
+        }
+    }
+]
