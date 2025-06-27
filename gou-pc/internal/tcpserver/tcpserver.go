@@ -27,7 +27,7 @@ var (
 func UpdateAgentStatusAndLog(cfg *config.ServerConfig) {
 	for {
 		offline := []string{}
-		clients, _ := agent.LoadClients(cfg.ClientDBFile)
+		clients, _ := agent.LoadClients()
 		now := time.Now()
 		helloLastSeenMu.RLock()
 		for i, c := range clients {
@@ -42,7 +42,13 @@ func UpdateAgentStatusAndLog(cfg *config.ServerConfig) {
 			}
 		}
 		helloLastSeenMu.RUnlock()
-		_ = agent.SaveClients(cfg.ClientDBFile, clients)
+		// Lưu trạng thái online/last_seen vào DB
+		for _, c := range clients {
+			err := agent.UpdateClientStatus(c.AgentID, c.Online, c.LastSeen)
+			if err != nil {
+				logutil.Error("UpdateClientStatus error: %v", err)
+			}
+		}
 		logutil.Info("Agent offline (quá 30s không gửi hello): %v", offline)
 		time.Sleep(30 * time.Second)
 	}
@@ -106,18 +112,16 @@ func handleConn(conn net.Conn, cfg *config.ServerConfig) {
 		var resp agent.Message
 		switch req.Type {
 		case agent.TypeRegister:
-			// Xử lý đăng ký: kiểm tra manager_client.json
-			clients, _ := agent.LoadClients(cfg.ClientDBFile) // truyền file path
+			// Xử lý đăng ký: kiểm tra DB thay vì file JSON
 			devInfo := agent.DeviceInfo{}
 			b, _ := json.Marshal(req.Data)
 			_ = json.Unmarshal(b, &devInfo)
-			found := agent.FindClientByDevice(devInfo, clients)
+			found, _ := agent.FindClientByDevice(devInfo.HardwareID)
 			if found == nil {
 				clientID := agent.GenClientID()
 				agentID := agent.GenAgentID()
 				newClient := agent.ManagedClient{ClientID: clientID, AgentID: agentID, DeviceInfo: devInfo}
-				clients = append(clients, newClient)
-				_ = agent.SaveClients(cfg.ClientDBFile, clients) // truyền file path
+				_ = agent.SaveClient(newClient) // Hàm này cần cài đặt để lưu 1 client vào DB
 				resp = agent.Message{
 					Type: agent.TypeRegister,
 					Data: map[string]string{"client_id": clientID, "agent_id": agentID},
@@ -138,7 +142,7 @@ func handleConn(conn net.Conn, cfg *config.ServerConfig) {
 			}
 			logutil.Info("[REQUEST OTP] from agent_id=%s, data=%v", agentID, req.Data)
 			// Tìm clientID theo agentID
-			clients, _ := agent.LoadClients(cfg.ClientDBFile)
+			clients, _ := agent.LoadClients()
 			var clientID string
 			for _, c := range clients {
 				if c.AgentID == agentID {

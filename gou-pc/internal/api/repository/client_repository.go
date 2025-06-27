@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"database/sql"
 	"gou-pc/internal/agent"
 	"gou-pc/internal/logutil"
 )
@@ -9,84 +10,215 @@ import (
 //go:generate mockgen -source=client_repository.go -destination=mock_client_repository.go -package=repository
 
 type ClientRepository interface {
-	GetAll() ([]agent.ManagedClient, error)
-	SaveAll([]agent.ManagedClient) error
-	FindByID(clientID string) (*agent.ManagedClient, error)
-	FindByAgentID(agentID string) (*agent.ManagedClient, error)
-	FindByUserID(userID string) ([]agent.ManagedClient, error)
-	GetClientIDByAgentID(agentID string) (string, error)
+	ClientGetAll() ([]agent.ManagedClient, error)
+	ClientCreate(client *agent.ManagedClient) error
+	ClientUpdate(client *agent.ManagedClient) error
+	ClientDeleteByID(clientID string) error
+	ClientFindByID(clientID string) (*agent.ManagedClient, error)
+	ClientFindByAgentID(agentID string) (*agent.ManagedClient, error)
+	ClientFindByUserID(userID string) ([]agent.ManagedClient, error)
+	ClientGetClientIDByAgentID(agentID string) (string, error)
 }
 
-type fileClientRepository struct {
-	managerFile string
+type sqliteClientRepository struct {
+	db *sql.DB
 }
 
-func NewFileClientRepository(managerFile string) ClientRepository {
-	return &fileClientRepository{managerFile: managerFile}
+func NewSQLiteClientRepository(db *sql.DB) ClientRepository {
+	return &sqliteClientRepository{db: db}
 }
 
-func (r *fileClientRepository) GetAll() ([]agent.ManagedClient, error) {
-	return agent.LoadClients(r.managerFile)
-}
-
-func (r *fileClientRepository) SaveAll(clients []agent.ManagedClient) error {
-	return agent.SaveClients(r.managerFile, clients)
-}
-
-func (r *fileClientRepository) FindByID(clientID string) (*agent.ManagedClient, error) {
-	clients, err := agent.LoadClients(r.managerFile)
+func (r *sqliteClientRepository) ClientGetAll() ([]agent.ManagedClient, error) {
+	rows, err := r.db.Query(`SELECT client_id, agent_id, hardware_id, user_name, last_seen, online FROM managed_clients`)
 	if err != nil {
 		return nil, err
 	}
-	for _, c := range clients {
-		if c.ClientID == clientID {
-			return &c, nil
+	defer rows.Close()
+	var clients []agent.ManagedClient
+	for rows.Next() {
+		var c agent.ManagedClient
+		var hardwareID string
+		var onlineInt int
+		err := rows.Scan(&c.ClientID, &c.AgentID, &hardwareID, &c.UserName, &c.LastSeen, &onlineInt)
+		c.DeviceInfo.HardwareID = hardwareID
+		c.Online = onlineInt == 1
+		if err == nil {
+			clients = append(clients, c)
 		}
 	}
-	return nil, nil
+	return clients, nil
 }
 
-func (r *fileClientRepository) FindByAgentID(agentID string) (*agent.ManagedClient, error) {
-	clients, err := agent.LoadClients(r.managerFile)
+func (r *sqliteClientRepository) ClientCreate(client *agent.ManagedClient) error {
+	if client == nil {
+		return sql.ErrNoRows
+	}
+	if client.ClientID == "" {
+		return sql.ErrNoRows
+	}
+	if client.AgentID == "" {
+		return sql.ErrNoRows
+	}
+	if client.DeviceInfo.HardwareID == "" {
+		return sql.ErrNoRows
+	}
+	_, err := r.db.Exec(`INSERT INTO managed_clients (client_id, agent_id, hardware_id, user_name, last_seen, online) VALUES (?, ?, ?, ?, ?, ?)`,
+		client.ClientID, client.AgentID, client.DeviceInfo.HardwareID, client.UserName, client.LastSeen, boolToInt(client.Online))
+	if err != nil {
+		logutil.Debug("ClientRepository.Create: failed to create client %s: %v", client.ClientID, err)
+		return err
+	}
+	logutil.Debug("ClientRepository.Create: created client %s", client.ClientID)
+	return nil
+}
+
+func (r *sqliteClientRepository) ClientUpdate(client *agent.ManagedClient) error {
+	if client == nil {
+		return sql.ErrNoRows
+	}
+	if client.ClientID == "" {
+		return sql.ErrNoRows
+	}
+	// Lấy client hiện tại từ DB
+	existing, err := r.ClientFindByID(client.ClientID)
+	if err != nil {
+		return err
+	}
+	if existing == nil {
+		return sql.ErrNoRows
+	}
+	fields := []string{}
+	args := []interface{}{}
+	if client.AgentID != "" && client.AgentID != existing.AgentID {
+		fields = append(fields, "agent_id=?")
+		args = append(args, client.AgentID)
+	}
+	if client.DeviceInfo.HardwareID != "" && client.DeviceInfo.HardwareID != existing.DeviceInfo.HardwareID {
+		fields = append(fields, "hardware_id=?")
+		args = append(args, client.DeviceInfo.HardwareID)
+	}
+	if client.UserName != "" && client.UserName != existing.UserName {
+		fields = append(fields, "user_name=?")
+		args = append(args, client.UserName)
+	}
+	if client.LastSeen != "" && client.LastSeen != existing.LastSeen {
+		fields = append(fields, "last_seen=?")
+		args = append(args, client.LastSeen)
+	}
+	if client.Online != existing.Online {
+		fields = append(fields, "online=?")
+		args = append(args, boolToInt(client.Online))
+	}
+	if len(fields) == 0 {
+		return nil // Không có gì để update
+	}
+	args = append(args, client.ClientID)
+	query := "UPDATE managed_clients SET " + joinFields(fields) + " WHERE client_id=?"
+	_, err = r.db.Exec(query, args...)
+	if err != nil {
+		logutil.Debug("ClientRepository.Update: failed to update client %s: %v", client.ClientID, err)
+		return err
+	}
+	logutil.Debug("ClientRepository.Update: updated client %s", client.ClientID)
+	return nil
+}
+
+func (r *sqliteClientRepository) ClientDeleteByID(clientID string) error {
+	if clientID == "" {
+		return sql.ErrNoRows
+	}
+	_, err := r.db.Exec(`DELETE FROM managed_clients WHERE client_id=?`, clientID)
+	if err != nil {
+		logutil.Debug("ClientRepository.DeleteByID: failed to delete client %s: %v", clientID, err)
+		return err
+	}
+	logutil.Debug("ClientRepository.DeleteByID: deleted client %s", clientID)
+	return nil
+}
+
+func (r *sqliteClientRepository) ClientFindByID(clientID string) (*agent.ManagedClient, error) {
+	if clientID == "" {
+		return nil, sql.ErrNoRows
+	}
+	row := r.db.QueryRow(`SELECT client_id, agent_id, hardware_id, user_name, last_seen, online FROM managed_clients WHERE client_id=?`, clientID)
+	var c agent.ManagedClient
+	var hardwareID string
+	var onlineInt int
+	err := row.Scan(&c.ClientID, &c.AgentID, &hardwareID, &c.UserName, &c.LastSeen, &onlineInt)
+	c.DeviceInfo.HardwareID = hardwareID
+	c.Online = onlineInt == 1
+	if err == sql.ErrNoRows {
+		return nil, nil
+	}
 	if err != nil {
 		return nil, err
 	}
-	for _, c := range clients {
-		if c.AgentID == agentID {
-			return &c, nil
-		}
-	}
-	return nil, nil
+	return &c, nil
 }
 
-func (r *fileClientRepository) FindByUserID(userID string) ([]agent.ManagedClient, error) {
-	clients, err := agent.LoadClients(r.managerFile)
+func (r *sqliteClientRepository) ClientFindByAgentID(agentID string) (*agent.ManagedClient, error) {
+	if agentID == "" {
+		return nil, sql.ErrNoRows
+	}
+	row := r.db.QueryRow(`SELECT client_id, agent_id, hardware_id, user_name, last_seen, online FROM managed_clients WHERE agent_id=?`, agentID)
+	var c agent.ManagedClient
+	var hardwareID string
+	var onlineInt int
+	err := row.Scan(&c.ClientID, &c.AgentID, &hardwareID, &c.UserName, &c.LastSeen, &onlineInt)
+	c.DeviceInfo.HardwareID = hardwareID
+	c.Online = onlineInt == 1
+	if err == sql.ErrNoRows {
+		return nil, nil
+	}
 	if err != nil {
-		logutil.Debug("FindByUserID: error loading clients: %v", err)
 		return nil, err
 	}
-	logutil.Debug("FindByUserID: loaded %d clients, looking for userID=%s", len(clients), userID)
-	var result []agent.ManagedClient
-	for _, c := range clients {
-		logutil.Debug("Checking client: agentID=%s, userID=%s", c.AgentID, c.UserID)
-		if c.UserID == userID {
-			logutil.Debug("Match: agentID=%s", c.AgentID)
-			result = append(result, c)
-		}
-	}
-	logutil.Debug("FindByUserID: found %d clients for userID=%s", len(result), userID)
-	return result, nil
+	return &c, nil
 }
 
-func (r *fileClientRepository) GetClientIDByAgentID(agentID string) (string, error) {
-	clients, err := agent.LoadClients(r.managerFile)
+func (r *sqliteClientRepository) ClientFindByUserID(userID string) ([]agent.ManagedClient, error) {
+	if userID == "" {
+		return nil, sql.ErrNoRows
+	}
+	rows, err := r.db.Query(`SELECT client_id, agent_id, hardware_id, user_name, last_seen, online FROM managed_clients WHERE user_name=?`, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var clients []agent.ManagedClient
+	for rows.Next() {
+		var c agent.ManagedClient
+		var hardwareID string
+		var onlineInt int
+		err := rows.Scan(&c.ClientID, &c.AgentID, &hardwareID, &c.UserName, &c.LastSeen, &onlineInt)
+		c.DeviceInfo.HardwareID = hardwareID
+		c.Online = onlineInt == 1
+		if err == nil {
+			clients = append(clients, c)
+		}
+	}
+	return clients, nil
+}
+
+func (r *sqliteClientRepository) ClientGetClientIDByAgentID(agentID string) (string, error) {
+	if agentID == "" {
+		return "", sql.ErrNoRows
+	}
+	row := r.db.QueryRow(`SELECT client_id FROM managed_clients WHERE agent_id=?`, agentID)
+	var clientID string
+	err := row.Scan(&clientID)
+	if err == sql.ErrNoRows {
+		return "", nil
+	}
 	if err != nil {
 		return "", err
 	}
-	for _, c := range clients {
-		if c.AgentID == agentID {
-			return c.ClientID, nil
-		}
+	return clientID, nil
+}
+
+func boolToInt(b bool) int {
+	if b {
+		return 1
 	}
-	return "", nil
+	return 0
 }

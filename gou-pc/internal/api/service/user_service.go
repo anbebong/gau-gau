@@ -4,18 +4,19 @@ import (
 	"errors"
 	"gou-pc/internal/api/model"
 	"gou-pc/internal/api/repository"
-	"time"
+	"gou-pc/internal/logutil"
+
+	"github.com/google/uuid"
 )
 
 type UserService interface {
-	CreateUser(user *model.User) error
-	UpdateUser(user *model.User) error
-	UpdatePassword(userID, newHash string) error
-	DeleteUser(userID string) error
-	AssignRole(userID, role string) error
-	GetUserByID(userID string) (*model.User, error)
-	GetUserByUsername(username string) (*model.User, error)
-	ListUsers() ([]model.User, error)
+	UserGetAll() ([]model.User, error)
+	UserGetByUsername(username string) (*model.User, error)
+	UserGetByID(id string) (*model.User, error)
+	UserCreate(user *model.User) error
+	UserUpdate(user *model.User) error
+	UserDeleteByUsername(username string) error
+	UserDeleteByID(id string) error
 }
 
 type userServiceImpl struct {
@@ -26,110 +27,81 @@ func NewUserService(repo repository.UserRepository) UserService {
 	return &userServiceImpl{repo: repo}
 }
 
-func (s *userServiceImpl) CreateUser(user *model.User) error {
-	users, err := s.repo.GetAll()
+func (s *userServiceImpl) UserGetAll() ([]model.User, error) {
+	return s.repo.UserGetAll()
+}
+
+func (s *userServiceImpl) UserGetByUsername(username string) (*model.User, error) {
+	return s.repo.UserFindByUsername(username)
+}
+
+func (s *userServiceImpl) UserGetByID(id string) (*model.User, error) {
+	return s.repo.UserFindByID(id)
+}
+
+func (s *userServiceImpl) UserCreate(user *model.User) error {
+	if user == nil {
+		return errors.New("user is nil")
+	}
+	if user.Username == "" {
+		return errors.New("username is required")
+	}
+	if user.Email == "" {
+		return errors.New("email is required")
+	}
+	if user.FullName == "" {
+		return errors.New("full_name is required")
+	}
+	if user.ID == "" {
+		user.ID = uuid.NewString()
+	}
+	err := s.repo.UserCreate(user)
 	if err != nil {
+		logutil.Debug("UserService.Create: failed to create user %s: %v", user.Username, err)
 		return err
 	}
-	for _, u := range users {
-		if u.Username == user.Username {
-			return errors.New("username already exists")
-		}
-	}
-	user.CreatedAt = time.Now()
-	user.UpdatedAt = time.Now()
-	users = append(users, *user)
-	return s.repo.SaveAll(users)
+	logutil.Debug("UserService.Create: created user %s", user.Username)
+	return nil
 }
 
-func (s *userServiceImpl) UpdateUser(user *model.User) error {
-	users, err := s.repo.GetAll()
+func (s *userServiceImpl) UserUpdate(user *model.User) error {
+	if user == nil {
+		return errors.New("user is nil")
+	}
+	if user.Username == "" {
+		return errors.New("username is required")
+	}
+	if user.Email == "" {
+		return errors.New("email is required")
+	}
+	if user.FullName == "" {
+		return errors.New("full_name is required")
+	}
+	err := s.repo.UserUpdate(user)
 	if err != nil {
+		logutil.Debug("UserService.Update: failed to update user %s: %v", user.Username, err)
 		return err
 	}
-	updated := false
-	for i, u := range users {
-		if u.ID == user.ID {
-			user.UpdatedAt = time.Now()
-			users[i] = *user
-			updated = true
-			break
-		}
-	}
-	if !updated {
-		return errors.New("user not found")
-	}
-	return s.repo.SaveAll(users)
+	logutil.Debug("UserService.Update: updated user %s", user.Username)
+	return nil
 }
 
-func (s *userServiceImpl) UpdatePassword(userID, newHash string) error {
-	users, err := s.repo.GetAll()
+func (s *userServiceImpl) UserDeleteByUsername(username string) error {
+	err := s.repo.UserDeleteByUsername(username)
 	if err != nil {
+		logutil.Debug("UserService.DeleteByUsername: failed to delete user %s: %v", username, err)
 		return err
 	}
-	updated := false
-	for i, u := range users {
-		if u.ID == userID {
-			users[i].PasswordHash = newHash
-			users[i].UpdatedAt = time.Now()
-			updated = true
-			break
-		}
-	}
-	if !updated {
-		return errors.New("user not found")
-	}
-	return s.repo.SaveAll(users)
+	logutil.Debug("UserService.DeleteByUsername: deleted user %s", username)
+	return nil
 }
 
-func (s *userServiceImpl) DeleteUser(userID string) error {
-	users, err := s.repo.GetAll()
+func (s *userServiceImpl) UserDeleteByID(id string) error {
+	err := s.repo.UserDeleteByID(id)
 	if err != nil {
+		logutil.Debug("UserService.DeleteByID: failed to delete user id=%s: %v", id, err)
 		return err
 	}
-	newUsers := users[:0]
-	deleted := false
-	for _, u := range users {
-		if u.ID == userID {
-			deleted = true
-			continue
-		}
-		newUsers = append(newUsers, u)
-	}
-	if !deleted {
-		return errors.New("user not found")
-	}
-	return s.repo.SaveAll(newUsers)
-}
-
-func (s *userServiceImpl) AssignRole(userID, role string) error {
-	users, err := s.repo.GetAll()
-	if err != nil {
-		return err
-	}
-	updated := false
-	for i, u := range users {
-		if u.ID == userID {
-			users[i].Role = role
-			users[i].UpdatedAt = time.Now()
-			updated = true
-			break
-		}
-	}
-	if !updated {
-		return errors.New("user not found")
-	}
-	return s.repo.SaveAll(users)
-}
-
-func (s *userServiceImpl) GetUserByID(userID string) (*model.User, error) {
-	return s.repo.FindByID(userID)
-}
-
-func (s *userServiceImpl) GetUserByUsername(username string) (*model.User, error) {
-	return s.repo.FindByUsername(username)
-}
-
-func (s *userServiceImpl) ListUsers() ([]model.User, error) {
-	return s.repo.GetAll()
+	logutil.Debug("UserService.DeleteByID: deleted user id=%s", id)
+	return nil
 }

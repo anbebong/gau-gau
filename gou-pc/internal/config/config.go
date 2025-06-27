@@ -18,7 +18,7 @@ func DefaultClientConfig() *ClientConfig {
 		EventLog:   "etc/event.log",
 		OffsetFile: "etc/event.log.offset",
 		ConfigFile: "etc/client.json",
-		ServerAddr: "localhost:9000",
+		ServerAddr: "192.168.15.12:9000",
 		Interval:   2 * time.Second,
 	}
 }
@@ -39,8 +39,8 @@ func DefaultServerConfig() *ServerConfig {
 	return &ServerConfig{
 		LogFile:      "etc/server.log",
 		ArchiveFile:  "etc/archive.log",
-		ClientDBFile: "etc/manager_client.json",
-		UserDBFile:   "etc/users.json",
+		ClientDBFile: "etc/manager_client.db",
+		UserDBFile:   "etc/users.db",
 		ListenAddr:   ":9000",
 		APIPort:      "8082",
 		JWTSecret:    "an-pt-2001",
