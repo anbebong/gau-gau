@@ -1,170 +1,99 @@
-# API Documentation
+# API List (with curl examples)
 
-## Authentication
+## Public
 
-### POST `/api/login`
-- **Input:**
-  ```json
-  { "username": "string", "password": "string" }
-  ```
-- **Output:**
-  ```json
-  {
-    "code": 0,
-    "message": "success",
-    "data": {
-      "token": "<jwt>",
-      "user": { ...user info... }
-    }
-  }
-  ```
-
----
-
-## User APIs
-
-### POST `/api/users/create` (admin only)
-- **Input:**
-  ```json
-  { "username": "string", "password": "string", "full_name": "string", "email": "string" }
-  ```
-- **Output:**
-  ```json
-  { "code": 0, "message": "success", "data": { "user": { ...user info... } } }
-  ```
-
-### POST `/api/users/delete` (admin only)
-- **Input:**
-  ```json
-  { "user_id": "string" }
-  ```
-- **Output:**
-  ```json
-  { "code": 0, "message": "user deleted successfully" }
-  ```
-
-### POST `/api/users/change-password`
-- **Input:**
-  ```json
-  { "user_id": "string", "new_password": "string" }
-  ```
-- **Output:**
-  ```json
-  { "code": 0, "message": "password changed successfully" }
-  ```
-
-### POST `/api/users/update`
-- **Input:**
-  ```json
-  { ...user object... }
-  ```
-- **Output:**
-  ```json
-  { "code": 0, "message": "user updated successfully" }
-  ```
-
-### POST `/api/users/update-info`
-- **Input:**
-  ```json
-  { "username": "string", "full_name": "string (optional)", "email": "string (optional)" }
-  ```
-- **Output:**
-  ```json
-  { "code": 0, "message": "user info updated successfully" }
-  ```
-
-### GET `/api/users` (admin only)
-- **Output:**
-  ```json
-  { "code": 0, "message": "success", "data": [ { ...user info... } ] }
-  ```
-
----
-
-## Client APIs
-
-### GET `/api/clients`
-- **Output:**
-  ```json
-  { "code": 0, "message": "success", "data": { "clients": [ ... ] } }
-  ```
-
-### GET `/api/clients/:agent_id`
-- **Output:**
-  ```json
-  { "code": 0, "message": "success", "data": { ...client info... } }
-  ```
-
-### GET `/api/clients/by-user/:user_id`
-- **Output:**
-  ```json
-  { "code": 0, "message": "success", "data": [ ...client list... ] }
-  ```
-
-### POST `/api/clients/delete` (admin only)
-- **Input:**
-  ```json
-  { "agent_id": "string" }
-  ```
-- **Output:**
-  ```json
-  { "code": 0, "message": "client deleted successfully" }
-  ```
-
-### POST `/api/clients/assign-user` (admin only)
-- **Input:**
-  ```json
-  { "agent_id": "string", "username": "string" }
-  ```
-- **Output:**
-  ```json
-  { "code": 0, "message": "user assigned to client successfully" }
-  ```
-
-### GET `/api/clients/:agent_id/otp`
-- **Output:**
-  ```json
-  { "code": 0, "message": "success", "data": { "otp": "string" } }
-  ```
-
-### GET `/api/clients/my-otp`
-- **Output:**
-  ```json
-  { "code": 0, "message": "success", "data": { "otp": "string" } }
-  ```
-
----
-
-## Log APIs
-
-### GET `/api/logs/archive` (admin only)
-- **Output:**
-  ```json
-  { "code": 0, "message": "success", "data": [ ...log list... ] }
-  ```
-
-### GET `/api/logs/my-device`
-- **Output:**
-  ```json
-  { "code": 0, "message": "success", "data": [ ...log list... ] }
-  ```
-
----
-
-## User Object Example
-```json
-{
-  "id": "string",
-  "username": "string",
-  "full_name": "string",
-  "email": "string",
-  "role": "user|admin",
-  "created_at": "datetime",
-  "updated_at": "datetime"
-}
+### Đăng nhập
+```
+curl -X POST http://localhost:8082/api/login -H "Content-Type: application/json" -d '{"username":"admin","password":"1"}'
 ```
 
-## Notes
-- Tất cả API (trừ /login) đều cần JWT Bearer token ở header: `Authorization: Bearer <token>`
-- Các API gắn (admin only) chỉ cho user có role admin.
-- Các trường input/output có thể bổ sung thêm tuỳ logic thực tế.
+## User (JWT required)
+
+### Tạo user (admin only)
+```
+curl -X POST http://localhost:8082/api/users/create  -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" -d '{"username":"newuser","password":"123","full_name":"New User","email":"new@example.com"}'
+```
+
+### Đổi mật khẩu
+```
+curl -X POST http://localhost:8082/api/users/change-password -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" -d '{"username":"user","new_password":"newpass"}'
+```
+
+### Cập nhật user
+```
+curl -X POST http://localhost:8082/api/users/update -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" -d '{"username":"user","full_name":"User Name","email":"user@example.com"}'
+```
+
+### Lấy danh sách user (admin only)
+```
+curl -X GET http://localhost:8082/api/users -H "Authorization: Bearer $TOKEN"
+```
+
+### Cập nhật thông tin cá nhân
+```
+curl -X POST http://localhost:8082/api/users/update-info -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" -d '{"username":"user","full_name":"User Name","email":"user@example.com"}'
+```
+
+### Xóa user (admin only)
+```
+curl -X DELETE http://localhost:8082/api/users/delete -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" -d '{"username":"user"}'
+```
+
+## Client (JWT required)
+
+### Lấy tất cả client
+```
+curl -X GET http://localhost:8082/api/clients -H "Authorization: Bearer $TOKEN"
+```
+
+### Lấy client theo agent_id
+```
+curl -X GET http://localhost:8082/api/clients/<agent_id> -H "Authorization: Bearer $TOKEN"
+```
+
+### Lấy client theo client_id
+```
+curl -X GET http://localhost:8082/api/clients/by-id/<client_id> -H "Authorization: Bearer $TOKEN"
+```
+
+### Xóa client theo agent_id (admin only)
+```
+curl -X POST http://localhost:8082/api/clients/delete-agentid -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" -d '{"agent_id":"..."}'
+```
+
+### Xóa client theo client_id (admin only)
+```
+curl -X POST http://localhost:8082/api/clients/delete-clientid -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" -d '{"client_id":"..."}'
+```
+
+### Gán user cho client theo agent_id (admin only)
+```
+curl -X POST http://localhost:8082/api/clients/assign-agentid -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" -d '{"agent_id":"...","username":"..."}'
+```
+
+### Gán user cho client theo client_id (admin only)
+```
+curl -X POST http://localhost:8082/api/clients/assign-clientid -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" -d '{"client_id":"...","username":"..."}'
+```
+
+### Lấy OTP của client theo agent_id
+```
+curl -X GET http://localhost:8082/api/clients/<agent_id>/otp -H "Authorization: Bearer $TOKEN"
+```
+
+### Lấy OTP của thiết bị mình quản lý
+```
+curl -X GET http://localhost:8082/api/clients/my-otp -H "Authorization: Bearer $TOKEN"
+```
+
+## Log (JWT required)
+
+### Lấy log archive (admin only)
+```
+curl -X GET http://localhost:8082/api/logs/archive -H "Authorization: Bearer $TOKEN"
+```
+
+### Lấy log thiết bị của mình
+```
+curl -X GET http://localhost:8082/api/logs/my-device -H "Authorization: Bearer $TOKEN"
+```

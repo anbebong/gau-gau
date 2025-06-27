@@ -11,12 +11,13 @@ import (
 //go:generate mockgen -source=client_service.go -destination=mock_client_service.go -package=service
 
 type ClientService interface {
-	AssignUserToClient(agentID, username string) error // nhận username, mapping ở service
+	AssignUserToClientByAgentID(agentID, username string) error
+	AssignUserToClientByClientID(clientID, username string) error
 	GetAllClients() ([]ManagedClientResponse, error)
 	GetClientByAgentID(agentID string) (*ManagedClientResponse, error)
-	GetClientsByUserID(userID string) ([]ManagedClientResponse, error)
-	GetAgentIDsByUserID(userID string) ([]string, error)
-	DeleteClient(agentID string) error // thêm hàm xóa client
+	GetClientByID(clientID string) (*ManagedClientResponse, error)
+	DeleteClientByAgentID(agentID string) error
+	DeleteClientByClientID(clientID string) error
 }
 
 // Response struct trả về client cho API, có Username thay vì user_id
@@ -39,125 +40,116 @@ func NewClientService(repo repository.ClientRepository, userRepo repository.User
 }
 
 // Gán user cho client bằng username (mapping sang user_id ở service)
-func (s *clientServiceImpl) AssignUserToClient(agentID, username string) error {
-	logutil.Debug("ClientService.AssignUserToClient called with agentID=%s, username=%s", agentID, username)
-	user, err := s.userRepo.FindByUsername(username)
-	if err != nil || user == nil {
-		logutil.Debug("ClientService.AssignUserToClient: username not found: %s", username)
-		return errors.New("username not found")
+func (s *clientServiceImpl) AssignUserToClientByAgentID(agentID, username string) error {
+	if agentID == "" {
+		return errors.New("agentID is required")
 	}
-	clients, err := s.repo.GetAll()
-	if err != nil {
-		logutil.Debug("ClientService.AssignUserToClient repo.GetAll error: %v", err)
-		return err
+	if username == "" {
+		return errors.New("username is required")
 	}
-	found := false
-	for i, c := range clients {
-		if c.AgentID == agentID {
-			clients[i].UserID = user.ID
-			found = true
-			break
-		}
-	}
-	if !found {
-		logutil.Debug("ClientService.AssignUserToClient: client not found agentID=%s", agentID)
+	logutil.Debug("ClientService.AssignUserToClientByAgentID called with agentID=%s, username=%s", agentID, username)
+	client, err := s.repo.ClientFindByAgentID(agentID)
+	if err != nil || client == nil {
 		return errors.New("client not found")
 	}
-	err = s.repo.SaveAll(clients)
-	if err != nil {
-		logutil.Debug("ClientService.AssignUserToClient SaveAll error: %v", err)
-	}
-	return err
+	client.UserName = username
+	return s.repo.ClientUpdate(client)
 }
 
-// Helper: mapping user_id sang username
-func (s *clientServiceImpl) mapClientToResponse(c agent.ManagedClient) ManagedClientResponse {
-	username := ""
-	if c.UserID != "" {
-		if user, err := s.userRepo.FindByID(c.UserID); err == nil && user != nil {
-			username = user.Username
-		}
+func (s *clientServiceImpl) AssignUserToClientByClientID(clientID, username string) error {
+	if clientID == "" {
+		return errors.New("clientID is required")
 	}
-	return ManagedClientResponse{
-		ClientID:   c.ClientID,
-		AgentID:    c.AgentID,
-		DeviceInfo: c.DeviceInfo,
-		Username:   username,
-		LastSeen:   c.LastSeen,
-		Online:     c.Online,
+	if username == "" {
+		return errors.New("username is required")
 	}
+	logutil.Debug("ClientService.AssignUserToClientByClientID called with clientID=%s, username=%s", clientID, username)
+	client, err := s.repo.ClientFindByID(clientID)
+	if err != nil || client == nil {
+		return errors.New("client not found")
+	}
+	client.UserName = username
+	return s.repo.ClientUpdate(client)
 }
 
 func (s *clientServiceImpl) GetAllClients() ([]ManagedClientResponse, error) {
 	logutil.Debug("ClientService.GetAllClients called")
-	clients, err := s.repo.GetAll()
+	clients, err := s.repo.ClientGetAll()
 	if err != nil {
 		return nil, err
 	}
 	var resp []ManagedClientResponse
 	for _, c := range clients {
-		resp = append(resp, s.mapClientToResponse(c))
+		resp = append(resp, ManagedClientResponse{
+			ClientID:   c.ClientID,
+			AgentID:    c.AgentID,
+			DeviceInfo: c.DeviceInfo,
+			Username:   c.UserName,
+			LastSeen:   c.LastSeen,
+			Online:     c.Online,
+		})
 	}
 	return resp, nil
 }
 
 func (s *clientServiceImpl) GetClientByAgentID(agentID string) (*ManagedClientResponse, error) {
+	if agentID == "" {
+		return nil, errors.New("agentID is required")
+	}
 	logutil.Debug("ClientService.GetClientByAgentID called with agentID=%s", agentID)
-	c, err := s.repo.FindByAgentID(agentID)
+	c, err := s.repo.ClientFindByAgentID(agentID)
 	if err != nil || c == nil {
 		return nil, err
 	}
-	r := s.mapClientToResponse(*c)
+	r := ManagedClientResponse{
+		ClientID:   c.ClientID,
+		AgentID:    c.AgentID,
+		DeviceInfo: c.DeviceInfo,
+		Username:   c.UserName,
+		LastSeen:   c.LastSeen,
+		Online:     c.Online,
+	}
 	return &r, nil
 }
 
-func (s *clientServiceImpl) GetClientsByUserID(userID string) ([]ManagedClientResponse, error) {
-	logutil.Debug("ClientService.GetClientsByUserID called with userID=%s", userID)
-	clients, err := s.repo.FindByUserID(userID)
-	if err != nil {
+func (s *clientServiceImpl) GetClientByID(clientID string) (*ManagedClientResponse, error) {
+	if clientID == "" {
+		return nil, errors.New("clientID is required")
+	}
+	logutil.Debug("ClientService.GetClientByID called with clientID=%s", clientID)
+	c, err := s.repo.ClientFindByID(clientID)
+	if err != nil || c == nil {
 		return nil, err
 	}
-	var resp []ManagedClientResponse
-	for _, c := range clients {
-		resp = append(resp, s.mapClientToResponse(c))
+	r := ManagedClientResponse{
+		ClientID:   c.ClientID,
+		AgentID:    c.AgentID,
+		DeviceInfo: c.DeviceInfo,
+		Username:   c.UserName,
+		LastSeen:   c.LastSeen,
+		Online:     c.Online,
 	}
-	return resp, nil
+	return &r, nil
 }
 
-func (s *clientServiceImpl) GetAgentIDsByUserID(userID string) ([]string, error) {
-	logutil.Debug("ClientService.GetAgentIDsByUserID called with userID=%s", userID)
-	clients, err := s.repo.FindByUserID(userID)
-	if err != nil {
-		logutil.Debug("ClientService.GetAgentIDsByUserID repo.FindByUserID error: %v", err)
-		return nil, err
+func (s *clientServiceImpl) DeleteClientByAgentID(agentID string) error {
+	if agentID == "" {
+		return errors.New("agentID is required")
 	}
-	var agentIDs []string
-	for _, c := range clients {
-		if c.AgentID != "" {
-			agentIDs = append(agentIDs, c.AgentID)
-		}
-	}
-	return agentIDs, nil
-}
-
-func (s *clientServiceImpl) DeleteClient(agentID string) error {
-	logutil.Debug("ClientService.DeleteClient called with agentID=%s", agentID)
-	clients, err := s.repo.GetAll()
-	if err != nil {
-		return err
-	}
-	newClients := make([]agent.ManagedClient, 0, len(clients))
-	deleted := false
-	for _, c := range clients {
-		if c.AgentID == agentID {
-			deleted = true
-			continue
-		}
-		newClients = append(newClients, c)
-	}
-	if !deleted {
-		logutil.Debug("ClientService.DeleteClient: client not found agentID=%s", agentID)
+	client, err := s.repo.ClientFindByAgentID(agentID)
+	if err != nil || client == nil {
 		return errors.New("client not found")
 	}
-	return s.repo.SaveAll(newClients)
+	return s.repo.ClientDeleteByID(client.ClientID)
+}
+
+func (s *clientServiceImpl) DeleteClientByClientID(clientID string) error {
+	if clientID == "" {
+		return errors.New("clientID is required")
+	}
+	client, err := s.repo.ClientFindByID(clientID)
+	if err != nil || client == nil {
+		return errors.New("client not found")
+	}
+	return s.repo.ClientDeleteByID(clientID)
 }

@@ -39,14 +39,16 @@ func Start(port string, userService service.UserService, clientService service.C
 		api.POST("/users/update", handler.UpdateUserHandler)
 		api.GET("/users", middleware.JWTAuthMiddleware(handler.ListUsersHandler, true)) // admin only
 		api.POST("/users/update-info", handler.UpdateUserInfoHandler)
-		api.POST("/users/delete", middleware.JWTAuthMiddleware(handler.DeleteUserHandler, true)) // admin only
+		api.DELETE("/users/delete", middleware.JWTAuthMiddleware(handler.DeleteUserHandler, true)) // admin only
 
 		// Client routes
-		api.GET("/clients", handler.ListClientsHandler)
-		api.GET("/clients/:agent_id", handler.GetClientByAgentIDHandler)
-		api.GET("/clients/by-user/:user_id", handler.GetClientsByUserIDHandler)
-		api.POST("/clients/delete", middleware.JWTAuthMiddleware(handler.DeleteClientHandler, true))   // admin only
-		api.POST("/clients/assign-user", middleware.JWTAuthMiddleware(handler.HandleAssignUser, true)) // admin only
+		api.GET("/clients", handler.HandleListClients)
+		api.GET("/clients/:agent_id", handler.HandleGetClientByAgentID)
+		api.GET("/clients/by-id/:client_id", handler.HandleGetClientByID)
+		api.POST("/clients/delete-agentid", middleware.JWTAuthMiddleware(handler.HandleDeleteClientByAgentID, true))         // admin only
+		api.POST("/clients/delete-clientid", middleware.JWTAuthMiddleware(handler.HandleDeleteClientByClientID, true))       // admin only
+		api.POST("/clients/assign-agentid", middleware.JWTAuthMiddleware(handler.HandleAssignUserToClientByAgentID, true))   // admin only
+		api.POST("/clients/assign-clientid", middleware.JWTAuthMiddleware(handler.HandleAssignUserToClientByClientID, true)) // admin only
 		// OTP routes
 		api.GET("/clients/:agent_id/otp", handler.GetOTPByAgentIDHandler)
 		api.GET("/clients/my-otp", handler.GetMyOTPHandler)

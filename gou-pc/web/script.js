@@ -55,7 +55,7 @@ let loadedUsers = [] // New global variable for users
 // Mock Data Functions (for development/testing)
 function getMockData(endpoint, currentUser) {
   const mockData = {
-    "/clients": [
+    "/api/clients": [
       {
         agentID: "AG-001-X7Y9",
         username: "admin",
@@ -816,7 +816,7 @@ async function handleLogin(e) {
         username: response.data.user.username,
         role: response.data.user.role,
         email: response.data.user.email,
-        fullName: response.data.user.name,
+        fullName: response.data.user.full_name,
         device: response.data.user.device,
       }
       localStorage.setItem("authToken", response.data.token)
@@ -891,6 +891,7 @@ function updateUsersTable(users) {
       <td>
         <button class="btn btn-sm btn-fixed" onclick="editUser('${user.username}')">Sửa</button>
         <button class="btn btn-sm btn-change-password" onclick="changeUserPassword('${user.username}')">Đổi pass</button>
+        <button class="btn btn-sm btn-danger" onclick="deleteUser('${user.username}')">Xoá</button>
       </td>
     `
     tbody.appendChild(row)
@@ -985,11 +986,11 @@ async function deleteDevice(agentId) {
 async function getOTP(agentId) {
   console.log("Requesting OTP for device:", agentId)
   try {
-    const response = await apiCall(`${API_CONFIG.endpoints.otp}?id=${agentId}`)
+    // Gọi đúng endpoint RESTful: /api/clients/:agent_id/otp
+    const response = await apiCall(`/api/clients/${agentId}/otp`)
     const otpData = response.data || response
     if (otpData && otpData.otp) {
-      const expiresIn = otpData.expire_in !== undefined ? otpData.expire_in : otpData.expiresTime
-      showOTPModal(otpData.otp, otpData.agentID, expiresIn)
+      showOTPModal(otpData.otp, otpData.agent_id, otpData.expire_in)
       console.log(`OTP received for ${agentId}: ${otpData.otp}`)
     } else {
       showNotification("Không thể lấy OTP cho thiết bị này!", "error")
@@ -1075,12 +1076,12 @@ async function createUser(userData) {
       body: JSON.stringify(userData),
     })
 
-    if (response.status === "success") {
-      showNotification(response.message, "success")
+    if (response.success === true) {
+      showNotification(response.message || "Tạo user thành công!", "success")
       console.log("User created successfully:", userData.username)
       return true
     } else {
-      showNotification("Lỗi khi tạo user!", "error")
+      showNotification(response.message || "Lỗi khi tạo user!", "error")
       console.error("API response error when creating user:", response)
       return false
     }
@@ -1133,14 +1134,16 @@ async function updateUser(userData) {
       method: "POST", // User specified POST
       body: JSON.stringify({
         username: username, // Identifier, not changeable
-        name: name,
+        full_name: name,
         email: email,
       }),
     })
 
-    if (response && response.status === "updated") {
-      // Check for the new response format
-      showNotification("Thông tin người dùng đã được cập nhật!", "success")
+    if (response && (response.success === true || response.status === "success")) {
+      showNotification(
+        (response.data && response.data.message) || response.message || "Thông tin người dùng đã được cập nhật!",
+        "success"
+      )
       console.log("User updated successfully:", username)
       return true
     } else {
@@ -1158,6 +1161,29 @@ async function updateUser(userData) {
 // Thêm vào cuối file các hàm quản lý user
 
 // User Management Functions
+async function deleteUser(username) {
+  console.log("Attempting to delete user:", username)
+  if (confirm(`Bạn có chắc chắn muốn xóa người dùng ${username}?`)) {
+    try {
+      const response = await apiCall(API_CONFIG.endpoints.getUsers + "/delete", {
+        method: "DELETE",
+        body: JSON.stringify({ username }),
+      })
+      if (response.status === "success" || response.success === true) {
+        showNotification(response.message || "Đã xóa người dùng!", "success")
+        await loadUsers()
+        console.log(`User ${username} deleted successfully.`)
+      } else {
+        showNotification("Lỗi khi xóa người dùng!", "error")
+        console.error("API response error when deleting user:", response)
+      }
+    } catch (error) {
+      showNotification("Lỗi khi xóa người dùng!", "error")
+      console.error("Failed to delete user!", error)
+    }
+  }
+}
+
 function editUser(username) {
   console.log("Editing user (admin side):", username)
   const modal = document.getElementById("userModal")
@@ -1173,7 +1199,7 @@ function editUser(username) {
     document.getElementById("userUsername").value = username
     document.getElementById("userUsername").readOnly = true
     document.getElementById("userEmail").value = targetUser.email
-    document.getElementById("userName").value = targetUser.name
+    document.getElementById("userName").value = targetUser.full_name
     // Phone field was removed from HTML, so no need to populate it here.
 
     const roleText = targetUser.role.toLowerCase()
@@ -1250,7 +1276,7 @@ async function saveUser() {
       username,
       password,
       email,
-      name,
+      full_name: name,
       role,
     })
 
@@ -1572,28 +1598,30 @@ async function loadUserOverviewData() {
 
       // Tải và hiển thị log trực tiếp
       try {
-        const logs = await apiCall(API_CONFIG.endpoints.myDeviceLogs) // Gọi API log của người dùng
-        if (logs && logs.length > 0) {
+        let logs = await apiCall(API_CONFIG.endpoints.myDeviceLogs)
+        logs = logs.data || logs // Lấy mảng log từ .data nếu có
+
+        if (Array.isArray(logs) && logs.length > 0) {
           logs.forEach((log) => {
             const row = document.createElement("tr")
-            const deviceId = log.agentID || "N/A"
+            const deviceId = log.agent_id || log.agentID || "N/A"
             const level = log.level ? log.level.toLowerCase() : "info"
             const event = log.message || "Log Entry"
             const details = log.details || ""
-            const timestamp = log.timestamp || new Date().toLocaleString("vi-VN")
+            const timestamp = log.time || log.timestamp || new Date().toLocaleString("vi-VN")
 
             row.innerHTML = `
-                                <td>${timestamp}</td>
-                                <td>${deviceId}</td>
-                                <td><span class="log-level ${level}">${level.toUpperCase()}</span></td>
-                                <td>${event}</td>
-                                <td>${details}</td>
-                            `
+      <td>${timestamp}</td>
+      <td>${deviceId}</td>
+      <td><span class="log-level ${level}">${level.toUpperCase()}</span></td>
+      <td>${event}</td>
+      <td>${details}</td>
+    `
             userDeviceLogsTableBody.appendChild(row)
           })
           console.log(`Loaded ${logs.length} logs for device ${assignedDevice.agentID}.`)
         } else {
-          userDeviceLogsEmptyState.style.display = "block" // Hiển thị empty state nếu không có log
+          userDeviceLogsEmptyState.style.display = "block"
           console.log(`No logs found for device ${assignedDevice.agentID}.`)
         }
       } catch (error) {

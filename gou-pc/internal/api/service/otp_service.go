@@ -23,7 +23,7 @@ func NewOTPService(repo repository.ClientRepository) OTPService {
 }
 
 func (s *otpServiceImpl) GetOTPByAgentID(agentID string) (string, error) {
-	clientID, err := s.repo.GetClientIDByAgentID(agentID)
+	clientID, err := s.repo.ClientGetClientIDByAgentID(agentID)
 	if err != nil || clientID == "" {
 		return "", errors.New("agent not found")
 	}
@@ -35,7 +35,7 @@ func (s *otpServiceImpl) GetOTPByClientID(clientID string) (string, error) {
 }
 
 func (s *otpServiceImpl) GetOTPByAgentIDWithExpire(agentID string) (string, int, error) {
-	clientID, err := s.repo.GetClientIDByAgentID(agentID)
+	clientID, err := s.repo.ClientGetClientIDByAgentID(agentID)
 	if err != nil || clientID == "" {
 		return "", 0, errors.New("agent not found")
 	}

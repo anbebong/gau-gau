@@ -1,6 +1,8 @@
 package handler
 
 import (
+	"encoding/json"
+	"fmt"
 	"gou-pc/internal/api/model"
 	"gou-pc/internal/api/response"
 	"gou-pc/internal/api/service"
@@ -32,23 +34,29 @@ func LoginHandler(c *gin.Context) {
 		Username string `json:"username"`
 		Password string `json:"password"`
 	}
-	if err := c.ShouldBindJSON(&req); err != nil {
-		logutil.Debug("LoginHandler: invalid request body")
+	// Đọc body ra chuỗi để debug
+	bodyBytes, _ := c.GetRawData()
+	fmt.Printf("[DEBUG] LoginHandler: raw request body: %s\n", string(bodyBytes))
+	if err := json.Unmarshal(bodyBytes, &req); err != nil {
+		logutil.Debug("LoginHandler: invalid request body (unmarshal)")
 		response.Error(c, http.StatusBadRequest, "invalid request body")
 		return
 	}
+	fmt.Printf("[DEBUG] LoginHandler: parsed username: %s, password: %s\n", req.Username, req.Password)
 	if req.Username == "" || req.Password == "" {
 		logutil.Debug("LoginHandler: missing username or password")
 		response.Error(c, http.StatusBadRequest, "username and password required")
 		return
 	}
-	user, err := userService.GetUserByUsername(req.Username)
+	user, err := userService.UserGetByUsername(req.Username)
+	fmt.Printf("[DEBUG] userService.GetByUsername(%s) => user: %+v, err: %v\n", req.Username, user, err)
 	if err != nil || user == nil {
 		logutil.Debug("LoginHandler: invalid username or password")
 		response.Error(c, http.StatusUnauthorized, "invalid username or password")
 		return
 	}
-	if user.PasswordHash != req.Password {
+	fmt.Printf("[DEBUG] LoginHandler: user in DB: username=%s, password=%s\n", user.Username, user.Password)
+	if user.Password != req.Password {
 		logutil.Debug("LoginHandler: password mismatch for user %s", req.Username)
 		response.Error(c, http.StatusUnauthorized, "invalid username or password")
 		return
@@ -97,25 +105,28 @@ func CreateUserHandler(c *gin.Context) {
 		response.Error(c, http.StatusBadRequest, "username and password required")
 		return
 	}
+	now := time.Now().UTC().Format(time.RFC3339)
 	user := &model.User{
-		Username:     req.Username,
-		PasswordHash: req.Password, // Nếu cần hash thì hash ở đây
-		FullName:     req.FullName,
-		Email:        req.Email,
-		Role:         "user",
+		Username:  req.Username,
+		Password:  req.Password, // Đã dùng Password, không phải PasswordHash
+		FullName:  req.FullName,
+		Email:     req.Email,
+		Role:      "user",
+		CreatedAt: now,
+		UpdatedAt: now,
 	}
 	// Sinh UUID nếu chưa có
 	if user.ID == "" {
 		user.ID = generateUUID()
 	}
 	logutil.Debug("CreateUserHandler: creating user %+v", user)
-	if err := userService.CreateUser(user); err != nil {
+	if err := userService.UserCreate(user); err != nil {
 		logutil.Debug("CreateUserHandler: failed to create user: %v", err)
 		response.Error(c, http.StatusBadRequest, err.Error())
 		return
 	}
 	// Lấy lại user vừa tạo từ DB để đảm bảo trả về đúng dữ liệu đã lưu
-	createdUser, err := userService.GetUserByUsername(user.Username)
+	createdUser, err := userService.UserGetByUsername(user.Username)
 	if err != nil || createdUser == nil {
 		logutil.Debug("CreateUserHandler: failed to fetch created user: %v", err)
 		response.Error(c, http.StatusInternalServerError, "failed to fetch created user")
@@ -141,7 +152,7 @@ func generateUUID() string {
 
 func ChangePasswordHandler(c *gin.Context) {
 	var req struct {
-		UserID      string `json:"user_id"`
+		UserID      string `json:"username"`
 		NewPassword string `json:"new_password"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -149,11 +160,17 @@ func ChangePasswordHandler(c *gin.Context) {
 		return
 	}
 	if req.UserID == "" || req.NewPassword == "" {
-		response.Error(c, http.StatusBadRequest, "user_id and new_password required")
+		response.Error(c, http.StatusBadRequest, "username and new_password required")
 		return
 	}
 	// TODO: hash password trước khi lưu
-	if err := userService.UpdatePassword(req.UserID, req.NewPassword); err != nil {
+	user, err := userService.UserGetByUsername(req.UserID)
+	if err != nil || user == nil {
+		response.Error(c, http.StatusBadRequest, "user not found")
+		return
+	}
+	user.Password = req.NewPassword
+	if err := userService.UserUpdate(user); err != nil {
 		response.Error(c, http.StatusBadRequest, err.Error())
 		return
 	}
@@ -166,15 +183,15 @@ func UpdateUserHandler(c *gin.Context) {
 		response.Error(c, http.StatusBadRequest, "invalid request body")
 		return
 	}
-	if req.ID == "" {
-		response.Error(c, http.StatusBadRequest, "user_id required")
+	if req.Username == "" {
+		response.Error(c, http.StatusBadRequest, "username required")
 		return
 	}
 	if req.FullName == "" {
 		response.Error(c, http.StatusBadRequest, "full_name required")
 		return
 	}
-	if err := userService.UpdateUser(&req); err != nil {
+	if err := userService.UserUpdate(&req); err != nil {
 		response.Error(c, http.StatusBadRequest, err.Error())
 		return
 	}
@@ -182,20 +199,20 @@ func UpdateUserHandler(c *gin.Context) {
 }
 
 func ListUsersHandler(c *gin.Context) {
-	users, err := userService.ListUsers()
+	users, err := userService.UserGetAll()
 	if err != nil {
 		response.Error(c, http.StatusInternalServerError, err.Error())
 		return
 	}
 	// Ẩn trường password, liệt kê đầy đủ user, trả về đúng thứ tự trường
 	type safeUser struct {
-		ID        string    `json:"id"`
-		Username  string    `json:"username"`
-		FullName  string    `json:"full_name"`
-		Email     string    `json:"email"`
-		Role      string    `json:"role"`
-		CreatedAt time.Time `json:"created_at"`
-		UpdatedAt time.Time `json:"updated_at"`
+		ID        string `json:"id"`
+		Username  string `json:"username"`
+		FullName  string `json:"full_name"`
+		Email     string `json:"email"`
+		Role      string `json:"role"`
+		CreatedAt string `json:"created_at"`
+		UpdatedAt string `json:"updated_at"`
 	}
 	var safeUsers []safeUser
 	for _, u := range users {
@@ -233,7 +250,7 @@ func UpdateUserInfoHandler(c *gin.Context) {
 		response.Error(c, http.StatusBadRequest, "username required")
 		return
 	}
-	user, err := userService.GetUserByUsername(req.Username)
+	user, err := userService.UserGetByUsername(req.Username)
 	if err != nil || user == nil {
 		logutil.Debug("UpdateUserInfoHandler: user not found: %v", err)
 		response.Error(c, http.StatusBadRequest, "user not found")
@@ -253,7 +270,7 @@ func UpdateUserInfoHandler(c *gin.Context) {
 		response.Success(c, gin.H{"message": "no changes"})
 		return
 	}
-	if err := userService.UpdateUser(user); err != nil {
+	if err := userService.UserUpdate(user); err != nil {
 		logutil.Debug("UpdateUserInfoHandler: failed to update user: %v", err)
 		response.Error(c, http.StatusBadRequest, err.Error())
 		return
@@ -265,7 +282,7 @@ func UpdateUserInfoHandler(c *gin.Context) {
 func DeleteUserHandler(c *gin.Context) {
 	logutil.Debug("DeleteUserHandler called")
 	var req struct {
-		UserID string `json:"user_id"`
+		UserID string `json:"username"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		logutil.Debug("DeleteUserHandler: invalid request body")
@@ -273,11 +290,11 @@ func DeleteUserHandler(c *gin.Context) {
 		return
 	}
 	if req.UserID == "" {
-		logutil.Debug("DeleteUserHandler: missing user_id")
-		response.Error(c, http.StatusBadRequest, "user_id required")
+		logutil.Debug("DeleteUserHandler: missing username")
+		response.Error(c, http.StatusBadRequest, "username required")
 		return
 	}
-	if err := userService.DeleteUser(req.UserID); err != nil {
+	if err := userService.UserDeleteByUsername(req.UserID); err != nil {
 		logutil.Debug("DeleteUserHandler: failed to delete user: %v", err)
 		response.Error(c, http.StatusBadRequest, err.Error())
 		return

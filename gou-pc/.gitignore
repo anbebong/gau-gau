@@ -1,3 +1,4 @@
 etc/*
 *.log
 *.json
+**.exe
