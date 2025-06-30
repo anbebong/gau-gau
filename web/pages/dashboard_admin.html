@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Quản lý hệ thống</title>
+    <link rel="stylesheet" href="../assets/css/style.css">
+</head>
+<body>
+    <div class="sidebar">
+        <h2>Admin Dashboard</h2>
+        <ul>
+            <li><a href="#" class="active">Tổng quan</a></li>
+            <li><a href="#">Quản lý thiết bị</a></li>
+            <li><a href="#">Quản lý người dùng</a></li>
+            <li><a href="#">Cảnh báo</a></li>
+            <li><a href="#">Báo cáo</a></li>
+            <li><a href="#">Cài đặt</a></li>
+        </ul>
+    </div>
+    <div class="header">
+        <span>Admin Dashboard - Quản lý hệ thống</span>
+        <div class="user">
+            <span id="admin-username">ADMIN</span>
+            <button class="logout-btn">Đăng xuất</button>
+        </div>
+    </div>
+    <div class="main">
+        <!-- Tổng quan -->
+        <div class="main-section" id="section-overview">
+            <h2 style="margin-bottom: 18px;">Tổng quan hệ thống</h2>
+            <div class="overview">
+                <div class="overview-card">
+                    <div class="icon">💻</div>
+                    <h3>THIẾT BỊ PC</h3>
+                    <div class="count">0</div>
+                    <div class="desc"><span id="device-online">0 Online</span> | <span class="offline" id="device-offline">0 Offline</span></div>
+                </div>
+                <div class="overview-card">
+                    <div class="icon">👤</div>
+                    <h3>NGƯỜI DÙNG</h3>
+                    <div class="count">0</div>
+                    <div class="desc"><span id="user-active">Đang hoạt động</span></div>
+                </div>
+                <div class="overview-card">
+                    <div class="icon">⚠️</div>
+                    <h3>CẢNH BÁO</h3>
+                    <div class="count">0</div>
+                    <div class="desc"><span class="offline" id="critical-warn">0 Nghiêm trọng</span> | <span class="warn" id="normal-warn">0 Cảnh báo</span></div>
+                </div>
+            </div>
+            <div class="log-section">
+                <h4>Log hệ thống</h4>
+                <select class="log-filter">
+                    <option value="">Tất cả Agent</option>
+                    <!-- Option agent sẽ được thêm động bằng JS nếu cần -->
+                </select>
+                <div class="log-table-container">
+                    <table class="log-table">
+                        <thead>
+                            <tr>
+                                <th>THỜI GIAN</th>
+                                <th>THIẾT BỊ</th>
+                                <th>MỨC ĐỘ</th>
+                                <th>SỰ KIỆN</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td colspan="4" style="text-align:center;color:#888;">Đang tải dữ liệu...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <!-- Quản lý thiết bị -->
+        <div class="main-section" id="section-devices" style="display:none;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">
+                <h2>Quản lý thiết bị</h2>
+                <!-- <button class="btn-add-device">+ Thêm thiết bị</button> -->
+            </div>
+            <div class="device-table-container">
+                <table class="device-table">
+                    <thead>
+                        <tr>
+                            <th>AGENT ID</th>
+                            <th>DEVICE NAME</th>
+                            <th>IP ADDRESS</th>
+                            <th>HARDWARE ID</th>
+                            <!-- <th>MAC ADDRESS</th> -->
+                            <th>NGƯỜI DÙNG ĐƯỢC GÁN</th>
+                            <th>TRẠNG THÁI</th>
+                            <th>CẬP NHẬT LẦN CUỐI</th>
+                            <th>THAO TÁC</th>
+                        </tr>
+                    </thead>
+                    <tbody id="device-tbody">
+                        <tr><td colspan="7" style="text-align:center;color:#888;">Đang tải dữ liệu...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <!-- Các section khác có thể bổ sung sau -->
+    </div>
+    <script src="../assets/js/dashboard_admin.js"></script>
+</body>
+</html>

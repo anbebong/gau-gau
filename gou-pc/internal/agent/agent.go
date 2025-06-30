@@ -64,24 +64,24 @@ func (a *Agent) Connect(addr string, timeout time.Duration) error {
 func (a *Agent) Send(msg Message) error {
 	jsonMsg, err := json.Marshal(msg)
 	if err != nil {
-		logutil.Error("Send: JSON marshal failed: %v", err)
+		logutil.CoreError("Send: JSON marshal failed: %v", err)
 		return err
 	}
-	logutil.Info("Send: {type:%s, agent_id:%s, payload:%v}", msg.Type, getAgentIDFromMsg(msg), getPayloadFromMsg(msg))
+	logutil.CoreInfo("Send: {type:%s, agent_id:%s, payload:%v}", msg.Type, getAgentIDFromMsg(msg), getPayloadFromMsg(msg))
 	encryptedMsg, err := crypto.Encrypt(string(jsonMsg))
 	if err != nil {
-		logutil.Error("Send: Encryption failed: %v", err)
+		logutil.CoreError("Send: Encryption failed: %v", err)
 		return err
 	}
 	lenBytes := make([]byte, 4)
 	binary.BigEndian.PutUint32(lenBytes, uint32(len(encryptedMsg)))
 	if _, err := a.Conn.Write(lenBytes); err != nil {
-		logutil.Error("Send: Write length failed: %v", err)
+		logutil.CoreError("Send: Write length failed: %v", err)
 		return err
 	}
 	_, err = a.Conn.Write([]byte(encryptedMsg))
 	if err != nil {
-		logutil.Error("Send: Write encrypted message failed: %v", err)
+		logutil.CoreError("Send: Write encrypted message failed: %v", err)
 	}
 	return err
 }
@@ -104,7 +104,7 @@ func (a *Agent) Receive() (Message, error) {
 	if err := json.Unmarshal([]byte(decryptedResp), &msg); err != nil {
 		return msg, err
 	}
-	logutil.Info("Received: {type:%s, agent_id:%s, data:%v}", msg.Type, getAgentIDFromMsg(msg), msg.Data)
+	logutil.CoreInfo("Received: {type:%s, agent_id:%s, data:%v}", msg.Type, getAgentIDFromMsg(msg), msg.Data)
 	return msg, nil
 }
 
@@ -156,18 +156,18 @@ func getMacAddress() string {
 
 func RegisterAgent(a *Agent, configPath string) (clientID, agentID string, err error) {
 	dev, _ := GetDeviceInfo()
-	logutil.Info("RegisterAgent: Registering device info: %+v", dev)
+	logutil.CoreInfo("RegisterAgent: Registering device info: %+v", dev)
 	msg := Message{Type: TypeRegister, Data: dev}
 	if err := a.Send(msg); err != nil {
-		logutil.Error("RegisterAgent: Send register message failed: %v", err)
+		logutil.CoreError("RegisterAgent: Send register message failed: %v", err)
 		return "", "", err
 	}
 	resp, err := a.Receive()
 	if err != nil {
-		logutil.Error("RegisterAgent: Receive response failed: %v", err)
+		logutil.CoreError("RegisterAgent: Receive response failed: %v", err)
 		return "", "", err
 	}
-	logutil.Info("RegisterAgent: Received response type=%s data=%v", resp.Type, resp.Data)
+	logutil.CoreInfo("RegisterAgent: Received response type=%s data=%v", resp.Type, resp.Data)
 	if resp.Type == TypeRegister {
 		var regInfo struct {
 			ClientID string `json:"client_id"`
@@ -175,11 +175,11 @@ func RegisterAgent(a *Agent, configPath string) (clientID, agentID string, err e
 		}
 		b, _ := json.Marshal(resp.Data)
 		_ = json.Unmarshal(b, &regInfo)
-		logutil.Info("RegisterAgent: Registration success client_id=%s agent_id=%s", regInfo.ClientID, regInfo.AgentID)
+		logutil.CoreInfo("RegisterAgent: Registration success client_id=%s agent_id=%s", regInfo.ClientID, regInfo.AgentID)
 		_ = os.WriteFile(configPath, []byte(fmt.Sprintf(`{"client_id":"%s","agent_id":"%s"}`, regInfo.ClientID, regInfo.AgentID)), 0644)
 		return regInfo.ClientID, regInfo.AgentID, nil
 	}
-	logutil.Error("RegisterAgent: Registration failed, response: %v", resp.Data)
+	logutil.CoreError("RegisterAgent: Registration failed, response: %v", resp.Data)
 	return "", "", fmt.Errorf("đăng ký thất bại: %v", resp.Data)
 }
 
@@ -199,14 +199,14 @@ func (a *Agent) WatchLogAndSend(logPath string, interval time.Duration, agentID 
 	for {
 		file, err := os.Open(logPath)
 		if err != nil {
-			logutil.Error("WatchLogAndSend: open log file error: %v", err)
+			logutil.CoreError("WatchLogAndSend: open log file error: %v", err)
 			time.Sleep(interval)
 			continue
 		}
 		stat, err := file.Stat()
 		if err != nil {
 			file.Close()
-			logutil.Error("WatchLogAndSend: stat log file error: %v", err)
+			logutil.CoreError("WatchLogAndSend: stat log file error: %v", err)
 			time.Sleep(interval)
 			continue
 		}
@@ -229,7 +229,7 @@ func (a *Agent) WatchLogAndSend(logPath string, interval time.Duration, agentID 
 					msg := Message{Type: TypeLog, Data: msgData}
 					err := a.Send(msg)
 					if err != nil {
-						logutil.Error("WatchLogAndSend: send log line error: %v", err)
+						logutil.CoreError("WatchLogAndSend: send log line error: %v", err)
 					}
 				}
 			}

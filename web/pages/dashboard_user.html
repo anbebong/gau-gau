@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Dashboard</title>
+    <link rel="stylesheet" href="../assets/css/style.css">
+</head>
+<body>
+    <div class="sidebar">
+        <h2>User Dashboard</h2>
+        <ul>
+            <li><a href="#" class="active">Tổng quan cá nhân</a></li>
+        </ul>
+    </div>
+    <div class="header">
+        <span>User Dashboard</span>
+        <div class="user">
+            <button class="logout-btn" onclick="window.location.href='login.html'">Đăng xuất</button>
+        </div>
+    </div>
+    <div class="main">
+        <h2 style="margin-bottom: 18px;">Thông tin cá nhân và thiết bị</h2>
+        <div class="profile-section">
+            <div class="profile-card">
+                <h3>Hồ sơ cá nhân</h3>
+                <form class="profile-form">
+                    <label for="username">Tên đăng nhập:</label>
+                    <input type="text" id="username" value="an">
+                    <label for="email">Email:</label>
+                    <input type="email" id="email" value="user1@example.com">
+                    <label for="fullname">Họ tên:</label>
+                    <input type="text" id="fullname" value="annnn">
+                    <button type="button">Cập nhật thông tin</button>
+                </form>
+            </div>
+            <div class="device-card">
+                <h3>Thông tin thiết bị được gán</h3>
+                <div class="no-device">
+                    Bạn chưa được gán thiết bị nào.<br>
+                    <span style="font-size:13px;">Vui lòng liên hệ quản trị viên để được hỗ trợ.</span>
+                </div>
+            </div>
+        </div>
+        <div class="log-section">
+            <h4>Log thiết bị</h4>
+            <div class="log-table-container">
+                <table class="log-table">
+                    <thead>
+                        <tr>
+                            <th>THỜI GIAN</th>
+                            <th>THIẾT BỊ</th>
+                            <th>MỨC ĐỘ</th>
+                            <th>SỰ KIỆN</th>
+                            <th>CHI TIẾT</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td colspan="5" style="text-align:center;color:#888;">Không có dữ liệu log thiết bị.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <script src="../assets/js/dashboard_user.js"></script>
+</body>
+</html>

@@ -3,6 +3,7 @@ package tcpserver
 import (
 	"encoding/binary"
 	"encoding/json"
+	"fmt"
 	"gou-pc/internal/agent"
 	"gou-pc/internal/config"
 	"gou-pc/internal/crypto"
@@ -25,9 +26,11 @@ var (
 
 // Hàm cập nhật trạng thái online/offline và last_seen (dạng chuỗi) cho agent
 func UpdateAgentStatusAndLog(cfg *config.ServerConfig) {
+	fmt.Println("[DEBUG] UpdateAgentStatusAndLog started")
 	for {
 		offline := []string{}
 		clients, _ := agent.LoadClients()
+		fmt.Printf("[DEBUG] Loaded %d clients from DB\n", len(clients))
 		now := time.Now()
 		helloLastSeenMu.RLock()
 		for i, c := range clients {
@@ -44,12 +47,13 @@ func UpdateAgentStatusAndLog(cfg *config.ServerConfig) {
 		helloLastSeenMu.RUnlock()
 		// Lưu trạng thái online/last_seen vào DB
 		for _, c := range clients {
+			// fmt.Printf("[DEBUG] Call UpdateClientStatus: agent_id=%s, online=%v, last_seen=%s\n", c.AgentID, c.Online, c.LastSeen)
 			err := agent.UpdateClientStatus(c.AgentID, c.Online, c.LastSeen)
 			if err != nil {
-				logutil.Error("UpdateClientStatus error: %v", err)
+				logutil.CoreError("UpdateClientStatus error: %v", err)
 			}
 		}
-		logutil.Info("Agent offline (quá 30s không gửi hello): %v", offline)
+		// logutil.CoreInfo("Agent offline (quá 30s không gửi hello): %v", offline)
 		time.Sleep(30 * time.Second)
 	}
 }
@@ -57,17 +61,17 @@ func UpdateAgentStatusAndLog(cfg *config.ServerConfig) {
 func Start(cfg *config.ServerConfig) error {
 	ln, err := net.Listen("tcp", cfg.ListenAddr)
 	if err != nil {
-		logutil.Error("failed to listen: %v", err)
+		logutil.CoreError("failed to listen: %v", err)
 		return err
 	}
 	defer ln.Close()
-	logutil.Info("TCP server (AES) listening on %s", cfg.ListenAddr)
+	logutil.CoreInfo("TCP server (AES) listening on %s", cfg.ListenAddr)
 	// Goroutine log agent offline mỗi 10s
 	go UpdateAgentStatusAndLog(cfg)
 	for {
 		conn, err := ln.Accept()
 		if err != nil {
-			logutil.Error("accept error: %v", err)
+			logutil.CoreError("accept error: %v", err)
 			continue
 		}
 		go handleConn(conn, cfg)
@@ -81,33 +85,33 @@ func handleConn(conn net.Conn, cfg *config.ServerConfig) {
 		_, err := io.ReadFull(conn, lenBuf)
 		if err != nil {
 			if err != io.EOF {
-				logutil.Error("read length error: %v", err)
+				logutil.CoreError("read length error: %v", err)
 			}
 			return
 		}
 		msgLen := binary.BigEndian.Uint32(lenBuf)
 		if msgLen == 0 || msgLen > 65536 {
-			logutil.Error("invalid message length")
+			logutil.CoreError("invalid message length")
 			return
 		}
 		msgBuf := make([]byte, msgLen)
 		_, err = io.ReadFull(conn, msgBuf)
 		if err != nil {
-			logutil.Error("read message error: %v", err)
+			logutil.CoreError("read message error: %v", err)
 			return
 		}
 		decrypted, err := crypto.Decrypt(string(msgBuf))
 		if err != nil {
-			logutil.Error("decrypt error: %v", err)
+			logutil.CoreError("decrypt error: %v", err)
 			return
 		}
 
 		var req agent.Message
 		if err := json.Unmarshal([]byte(decrypted), &req); err != nil {
-			logutil.Error("invalid message format: %v", err)
+			logutil.CoreError("invalid message format: %v", err)
 			return
 		}
-		logutil.Info("Received: {type:%s, agent_id:%s, data:%v}", req.Type, getAgentIDFromMsg(req), req.Data)
+		logutil.CoreInfo("Received: {type:%s, agent_id:%s, data:%v}", req.Type, getAgentIDFromMsg(req), req.Data)
 
 		var resp agent.Message
 		switch req.Type {
@@ -140,7 +144,7 @@ func handleConn(conn net.Conn, cfg *config.ServerConfig) {
 					agentID = v
 				}
 			}
-			logutil.Info("[REQUEST OTP] from agent_id=%s, data=%v", agentID, req.Data)
+			logutil.CoreInfo("[REQUEST OTP] from agent_id=%s, data=%v", agentID, req.Data)
 			// Tìm clientID theo agentID
 			clients, _ := agent.LoadClients()
 			var clientID string
@@ -168,11 +172,19 @@ func handleConn(conn net.Conn, cfg *config.ServerConfig) {
 				}
 			}
 			if agentID != "" {
+				exists, err := agent.AgentExists(agentID)
+				if err != nil || !exists {
+					resp = agent.Message{
+						Type: agent.TypeError,
+						Data: "Agent not registered. Please register again.",
+					}
+					break
+				}
 				helloLastSeenMu.Lock()
 				helloLastSeen[agentID] = time.Now()
 				helloLastSeenMu.Unlock()
 			}
-			logutil.Info("[HELLO] from agent_id=%s, data=%v", agentID, req.Data)
+			logutil.CoreInfo("[HELLO] from agent_id=%s, data=%v", agentID, req.Data)
 			resp = agent.Message{
 				Type: agent.TypeHello,
 				Data: map[string]interface{}{"agent_id": agentID, "payload": req.Data},
@@ -189,6 +201,16 @@ func handleConn(conn net.Conn, cfg *config.ServerConfig) {
 					}
 				}
 			}
+			if agentID != "" {
+				exists, err := agent.AgentExists(agentID)
+				if err != nil || !exists {
+					resp = agent.Message{
+						Type: agent.TypeError,
+						Data: "Agent not registered. Please register again.",
+					}
+					break
+				}
+			}
 			logEntry := ArchiveLogEntry{
 				Time:    time.Now().Format(time.RFC3339),
 				AgentID: agentID,
@@ -202,7 +224,7 @@ func handleConn(conn net.Conn, cfg *config.ServerConfig) {
 					f.Close()
 				}
 			}
-			logutil.Info("[CLIENT LOG] %v", logEntry)
+			logutil.CoreInfo("[CLIENT LOG] %v", logEntry)
 			resp = agent.Message{
 				Type: agent.TypeLog,
 				Data: map[string]interface{}{"agent_id": agentID, "result": "log received"},
@@ -217,7 +239,7 @@ func handleConn(conn net.Conn, cfg *config.ServerConfig) {
 		respJson, _ := json.Marshal(resp)
 		encrypted, err := crypto.Encrypt(string(respJson))
 		if err != nil {
-			logutil.Error("encrypt error: %v", err)
+			logutil.CoreError("encrypt error: %v", err)
 			return
 		}
 		respBytes := []byte(encrypted)
@@ -225,14 +247,14 @@ func handleConn(conn net.Conn, cfg *config.ServerConfig) {
 		lenResp := make([]byte, 4)
 		binary.BigEndian.PutUint32(lenResp, respLen)
 		if _, err := conn.Write(lenResp); err != nil {
-			logutil.Error("write response length error: %v", err)
+			logutil.CoreError("write response length error: %v", err)
 			return
 		}
 		if _, err := conn.Write(respBytes); err != nil {
-			logutil.Error("write response error: %v", err)
+			logutil.CoreError("write response error: %v", err)
 			return
 		}
-		logutil.Info("Sent: {type:%s, agent_id:%v, data:%v}", resp.Type, getAgentIDFromResp(resp), resp.Data)
+		logutil.CoreInfo("Sent: {type:%s, agent_id:%v, data:%v}", resp.Type, getAgentIDFromResp(resp), resp.Data)
 	}
 }
 

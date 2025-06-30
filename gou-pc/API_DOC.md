@@ -7,6 +7,24 @@
 curl -X POST http://localhost:8082/api/login -H "Content-Type: application/json" -d '{"username":"admin","password":"1"}'
 ```
 
+```
+{
+    "data": {
+        "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NTEyNzc4NjMsInJvbGUiOiJhZG1pbiIsInVzZXJfaWQiOiJlYTA2YmQ2Yi1hYTg5LTQxNzItODY3NS04MmQ5NWI2NmQ4NDYiLCJ1c2VybmFtZSI6ImFkbWluIn0.UJjJe_yzUU05jfs8z2GAvp8mER_E5CFp0LpokWK0FDI",
+        "user": {
+            "created_at": "2024-01-01T00:00:00Z",
+            "email": "admin@example.com",
+            "full_name": "ADMIN",
+            "id": "ea06bd6b-aa89-4172-8675-82d95b66d846",
+            "role": "admin",
+            "updated_at": "2024-01-01T00:00:00Z",
+            "username": "admin"
+        }
+    },
+    "success": true
+}
+```
+
 ## User (JWT required)
 
 ### Tạo user (admin only)

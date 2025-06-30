@@ -28,6 +28,9 @@ func InitAgentDB(path string) (*sql.DB, error) {
 		client_id TEXT PRIMARY KEY,
 		agent_id TEXT UNIQUE,
 		hardware_id TEXT,
+		host_name TEXT,
+		ip_address TEXT,
+		mac_address TEXT,
 		user_name TEXT,
 		last_seen TEXT,
 		online INTEGER
@@ -74,7 +77,11 @@ func InitAgentDB(path string) (*sql.DB, error) {
 
 func main() {
 	cfg := config.DefaultServerConfig()
-	if err := logutil.Init(cfg.LogFile, logutil.DEBUG); err != nil {
+	if err := logutil.InitCoreLogger(cfg.LogFile, logutil.DEBUG); err != nil {
+		fmt.Printf("Could not open log file: %v\n", err)
+		os.Exit(1)
+	}
+	if err := logutil.InitAPILogger(cfg.APILogFile, logutil.DEBUG); err != nil {
 		fmt.Printf("Could not open log file: %v\n", err)
 		os.Exit(1)
 	}
@@ -102,7 +109,7 @@ func main() {
 	go func() {
 		defer wg.Done()
 		if err := tcpserver.Start(cfg); err != nil {
-			logutil.Error("TCP server error: %v", err)
+			logutil.CoreError("TCP server error: %v", err)
 			os.Exit(1)
 		}
 	}()
@@ -116,7 +123,7 @@ func main() {
 		fmt.Println("Serving static web at http://localhost:8080/")
 		err := http.ListenAndServe(":8080", http.FileServer(http.Dir("web")))
 		if err != nil {
-			logutil.Error("Static web server error: %v", err)
+			logutil.CoreError("Static web server error: %v", err)
 			os.Exit(1)
 		}
 	}()

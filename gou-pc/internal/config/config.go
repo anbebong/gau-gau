@@ -26,6 +26,7 @@ func DefaultClientConfig() *ClientConfig {
 // ServerConfig holds all configurable paths and options for the server
 type ServerConfig struct {
 	LogFile      string        // Đường dẫn file log server
+	APILogFile   string        // File log API server
 	ArchiveFile  string        // File lưu log thu thập từ agent
 	ClientDBFile string        // File lưu thông tin client/agent
 	UserDBFile   string        // File lưu thông tin user
@@ -38,6 +39,7 @@ type ServerConfig struct {
 func DefaultServerConfig() *ServerConfig {
 	return &ServerConfig{
 		LogFile:      "etc/server.log",
+		APILogFile:   "etc/server-api.log",
 		ArchiveFile:  "etc/archive.log",
 		ClientDBFile: "etc/manager_client.db",
 		UserDBFile:   "etc/users.db",

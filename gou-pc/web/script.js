@@ -5,7 +5,7 @@ const API_CONFIG = {
     login: "/api/login",
     logout: "/api/logout",
     clients: "/api/clients",
-    deleteClient: "/clients/delete",
+    deleteClient: "/api/clients/delete-agentid",
     assignUser: "/api/clients/assign-user",
     otp: "/api/otp",
     createUser: "/api/users/create",
@@ -591,7 +591,7 @@ function updateStatsDisplay(stats) {
   if (document.querySelector(".online")) document.querySelector(".online").textContent = `${stats.onlinePCs || 0} Online`
   if (document.querySelector(".offline")) document.querySelector(".offline").textContent = `${stats.offlinePCs || 0} Offline`
   if (document.getElementById("totalUsers")) document.getElementById("totalUsers").textContent = stats.totalUsers || 0
-  if (document.querySelector(".active-users")) document.querySelector(".active-users").textContent = `${stats.activeUsers || 0} Đang hoạt động`
+  if (document.querySelector(".active-users")) document.querySelector(".active-users").textContent = `${stats.totalUsers || 0} Đang hoạt động`
   if (document.getElementById("totalAlerts")) document.getElementById("totalAlerts").textContent = stats.totalAlerts || 0
   if (document.querySelector(".critical")) document.querySelector(".critical").textContent = `${stats.criticalAlerts || 0} Nghiêm trọng`
   if (document.querySelector(".warning")) document.querySelector(".warning").textContent = `${stats.warningAlerts || 0} Cảnh báo`

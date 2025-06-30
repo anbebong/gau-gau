@@ -45,7 +45,7 @@ func JWTAuthMiddleware(handler gin.HandlerFunc, requireAdmin bool) gin.HandlerFu
 		userID, _ := claims["user_id"].(string)
 		username, _ := claims["username"].(string)
 		role, _ := claims["role"].(string)
-		// logutil.Debug("JWTAuthMiddleware: user_id = %v, username = %v, role = %v", userID, username, role)
+		// logutil.APIDebug("JWTAuthMiddleware: user_id = %v, username = %v, role = %v", userID, username, role)
 		c.Set("user_id", userID)    // user_id (string) dùng cho mọi truy vấn
 		c.Set("username", username) // username chỉ để hiển thị
 		c.Set("role", role)
@@ -72,7 +72,7 @@ func JWTAuthMiddlewareFunc() gin.HandlerFunc {
 		userID, _ := claims["user_id"].(string)
 		username, _ := claims["username"].(string)
 		role, _ := claims["role"].(string)
-		// logutil.Debug("JWTAuthMiddlewareFunc: user_id = %v, username = %v, role = %v", userID, username, role)
+		// logutil.APIDebug("JWTAuthMiddlewareFunc: user_id = %v, username = %v, role = %v", userID, username, role)
 		c.Set("user_id", userID)    // user_id (string) dùng cho mọi truy vấn
 		c.Set("username", username) // username chỉ để hiển thị
 		c.Set("role", role)

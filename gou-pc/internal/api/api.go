@@ -45,8 +45,8 @@ func Start(port string, userService service.UserService, clientService service.C
 		api.GET("/clients", handler.HandleListClients)
 		api.GET("/clients/:agent_id", handler.HandleGetClientByAgentID)
 		api.GET("/clients/by-id/:client_id", handler.HandleGetClientByID)
-		api.POST("/clients/delete-agentid", middleware.JWTAuthMiddleware(handler.HandleDeleteClientByAgentID, true))         // admin only
-		api.POST("/clients/delete-clientid", middleware.JWTAuthMiddleware(handler.HandleDeleteClientByClientID, true))       // admin only
+		api.DELETE("/clients/delete-agentid", middleware.JWTAuthMiddleware(handler.HandleDeleteClientByAgentID, true))       // admin only
+		api.DELETE("/clients/delete-clientid", middleware.JWTAuthMiddleware(handler.HandleDeleteClientByClientID, true))     // admin only
 		api.POST("/clients/assign-agentid", middleware.JWTAuthMiddleware(handler.HandleAssignUserToClientByAgentID, true))   // admin only
 		api.POST("/clients/assign-clientid", middleware.JWTAuthMiddleware(handler.HandleAssignUserToClientByClientID, true)) // admin only
 		// OTP routes
@@ -58,6 +58,6 @@ func Start(port string, userService service.UserService, clientService service.C
 		api.GET("/logs/my-device", handler.GetMyDeviceLogHandler)
 	}
 
-	logutil.Info("API server (Gin) starting on port %s...", port)
+	logutil.APIInfo("API server (Gin) starting on port %s...", port)
 	r.Run(":" + port)
 }

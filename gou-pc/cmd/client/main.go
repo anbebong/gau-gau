@@ -12,7 +12,7 @@ import (
 
 func main() {
 	cfg := config.DefaultClientConfig()
-	if err := logutil.Init(cfg.LogFile, logutil.DEBUG); err != nil {
+	if err := logutil.InitCoreLogger(cfg.LogFile, logutil.DEBUG); err != nil {
 		fmt.Printf("Could not open log file: %v\n", err)
 		os.Exit(1)
 	}
@@ -37,7 +37,7 @@ func main() {
 
 	a := &agent.Agent{}
 	if err := a.Connect(cfg.ServerAddr, 10*time.Second); err != nil {
-		logutil.Error("failed to connect: %v", err)
+		logutil.CoreError("failed to connect: %v", err)
 		os.Exit(1)
 	}
 	defer a.Close()
@@ -45,7 +45,7 @@ func main() {
 	if needRegister {
 		clientID, agentID, err := agent.RegisterAgent(a, cfg.ConfigFile)
 		if err != nil {
-			logutil.Error("register error: %v", err)
+			logutil.CoreError("register error: %v", err)
 			os.Exit(1)
 		}
 		clientInfo.ClientID = clientID
@@ -66,24 +66,24 @@ func main() {
 				},
 			}
 			if err := a.Send(otpMsg); err != nil {
-				logutil.Error("Send OTP error: %v", err)
+				logutil.CoreError("Send OTP error: %v", err)
 				return err
 			}
 			resp, err := a.Receive()
 			if err != nil {
-				logutil.Error("Receive OTP error: %v", err)
+				logutil.CoreError("Receive OTP error: %v", err)
 				return err
 			}
-			logutil.Info("Received OTP response: %+v", resp)
+			logutil.CoreInfo("Received OTP response: %+v", resp)
 			if m, ok := resp.Data.(map[string]interface{}); ok {
 				if otp, ok := m["otp"].(string); ok {
-					logutil.Info("Parsed OTP: %s", otp)
-					logutil.Info("Received OTP: {agent_id:%s, otp:%s}", m["agent_id"], m["otp"])
+					logutil.CoreInfo("Parsed OTP: %s", otp)
+					logutil.CoreInfo("Received OTP: {agent_id:%s, otp:%s}", m["agent_id"], m["otp"])
 					otpChan <- otp
 					return nil
 				}
 			}
-			logutil.Error("OTP response parse failed: %+v", resp.Data)
+			logutil.CoreError("OTP response parse failed: %+v", resp.Data)
 			return fmt.Errorf("no otp in response")
 		},
 		a.Conn,
@@ -102,6 +102,26 @@ func main() {
 				},
 			}
 			_ = a.Send(helloMsg)
+			resp, err := a.Receive()
+			if err != nil {
+				logutil.CoreError("Receive hello response error: %v", err)
+			} else {
+				// Nếu server báo chưa đăng ký thì xóa file config và đăng ký lại
+				if resp.Type == agent.TypeError {
+					if msg, ok := resp.Data.(string); ok && msg == "Agent not registered. Please register again." {
+						logutil.CoreInfo("Agent chưa đăng ký, xóa thông tin cũ và đăng ký lại...")
+						os.Remove(cfg.ConfigFile)
+						clientID, agentID, err := agent.RegisterAgent(a, cfg.ConfigFile)
+						if err != nil {
+							logutil.CoreError("register error: %v", err)
+							os.Exit(1)
+						}
+						clientInfo.ClientID = clientID
+						clientInfo.AgentID = agentID
+						fmt.Println("Đăng ký lại thành công, đã lưu client_id và agent_id!")
+					}
+				}
+			}
 			<-ticker.C
 		}
 	}()

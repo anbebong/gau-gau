@@ -57,10 +57,10 @@ func (s *userServiceImpl) UserCreate(user *model.User) error {
 	}
 	err := s.repo.UserCreate(user)
 	if err != nil {
-		logutil.Debug("UserService.Create: failed to create user %s: %v", user.Username, err)
+		logutil.APIDebug("UserService.Create: failed to create user %s: %v", user.Username, err)
 		return err
 	}
-	logutil.Debug("UserService.Create: created user %s", user.Username)
+	logutil.APIDebug("UserService.Create: created user %s", user.Username)
 	return nil
 }
 
@@ -79,29 +79,29 @@ func (s *userServiceImpl) UserUpdate(user *model.User) error {
 	}
 	err := s.repo.UserUpdate(user)
 	if err != nil {
-		logutil.Debug("UserService.Update: failed to update user %s: %v", user.Username, err)
+		logutil.APIDebug("UserService.Update: failed to update user %s: %v", user.Username, err)
 		return err
 	}
-	logutil.Debug("UserService.Update: updated user %s", user.Username)
+	logutil.APIDebug("UserService.Update: updated user %s", user.Username)
 	return nil
 }
 
 func (s *userServiceImpl) UserDeleteByUsername(username string) error {
 	err := s.repo.UserDeleteByUsername(username)
 	if err != nil {
-		logutil.Debug("UserService.DeleteByUsername: failed to delete user %s: %v", username, err)
+		logutil.APIDebug("UserService.DeleteByUsername: failed to delete user %s: %v", username, err)
 		return err
 	}
-	logutil.Debug("UserService.DeleteByUsername: deleted user %s", username)
+	logutil.APIDebug("UserService.DeleteByUsername: deleted user %s", username)
 	return nil
 }
 
 func (s *userServiceImpl) UserDeleteByID(id string) error {
 	err := s.repo.UserDeleteByID(id)
 	if err != nil {
-		logutil.Debug("UserService.DeleteByID: failed to delete user id=%s: %v", id, err)
+		logutil.APIDebug("UserService.DeleteByID: failed to delete user id=%s: %v", id, err)
 		return err
 	}
-	logutil.Debug("UserService.DeleteByID: deleted user id=%s", id)
+	logutil.APIDebug("UserService.DeleteByID: deleted user id=%s", id)
 	return nil
 }

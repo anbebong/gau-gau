@@ -14,13 +14,13 @@ var logService service.LogService
 func InjectLogService(s service.LogService) { logService = s }
 
 func GetArchiveLogHandler(c *gin.Context) {
-	logutil.Debug("GetArchiveLogHandler called")
+	logutil.APIDebug("GetArchiveLogHandler called")
 	agentID := c.Query("agent")
 	if agentID != "" {
-		logutil.Debug("GetArchiveLogHandler: filter by agent_id=%s", agentID)
+		logutil.APIDebug("GetArchiveLogHandler: filter by agent_id=%s", agentID)
 		logs, err := logService.GetLogsByAgentID(agentID)
 		if err != nil {
-			logutil.Debug("GetArchiveLogHandler error: %v", err)
+			logutil.APIDebug("GetArchiveLogHandler error: %v", err)
 			response.Error(c, http.StatusInternalServerError, err.Error())
 			return
 		}
@@ -29,26 +29,26 @@ func GetArchiveLogHandler(c *gin.Context) {
 	} else {
 		logs, err := logService.GetAllLogs()
 		if err != nil {
-			logutil.Debug("GetArchiveLogHandler error: %v", err)
+			logutil.APIDebug("GetArchiveLogHandler error: %v", err)
 			response.Error(c, http.StatusInternalServerError, err.Error())
 			return
 		}
-		logutil.Debug("GetArchiveLogHandler success, %d logs", len(logs))
+		logutil.APIDebug("GetArchiveLogHandler success, %d logs", len(logs))
 		response.Success(c, logs)
 	}
 }
 
 func GetMyDeviceLogHandler(c *gin.Context) {
-	logutil.Debug("GetMyDeviceLogHandler called")
+	logutil.APIDebug("GetMyDeviceLogHandler called")
 	username, ok := c.Get("username")
 	if !ok {
-		logutil.Debug("GetMyDeviceLogHandler missing username in context")
+		logutil.APIDebug("GetMyDeviceLogHandler missing username in context")
 		response.Error(c, http.StatusUnauthorized, "username not found in context")
 		return
 	}
 	clients, err := clientService.GetAllClients()
 	if err != nil {
-		logutil.Debug("GetMyDeviceLogHandler: error getting all clients: %v", err)
+		logutil.APIDebug("GetMyDeviceLogHandler: error getting all clients: %v", err)
 		response.Error(c, http.StatusInternalServerError, "Không lấy được danh sách thiết bị")
 		return
 	}
@@ -59,7 +59,7 @@ func GetMyDeviceLogHandler(c *gin.Context) {
 		}
 	}
 	if len(agentIDs) == 0 {
-		logutil.Debug("GetMyDeviceLogHandler: user %v has no agentIDs", username)
+		logutil.APIDebug("GetMyDeviceLogHandler: user %v has no agentIDs", username)
 		response.Error(c, http.StatusNotFound, "User chưa được gán thiết bị hoặc không tìm thấy agent_id")
 		return
 	}
@@ -67,12 +67,12 @@ func GetMyDeviceLogHandler(c *gin.Context) {
 	for _, agentID := range agentIDs {
 		logs, err := logService.GetLogsByAgentID(agentID)
 		if err == nil && logs != nil {
-			logutil.Debug("GetMyDeviceLogHandler: found %d logs for agentID=%s", len(logs), agentID)
+			logutil.APIDebug("GetMyDeviceLogHandler: found %d logs for agentID=%s", len(logs), agentID)
 			for _, l := range logs {
 				allLogs = append(allLogs, l)
 			}
 		}
 	}
-	logutil.Debug("GetMyDeviceLogHandler: total logs returned: %d", len(allLogs))
+	logutil.APIDebug("GetMyDeviceLogHandler: total logs returned: %d", len(allLogs))
 	response.Success(c, allLogs)
 }

@@ -29,7 +29,7 @@ func NewSQLiteClientRepository(db *sql.DB) ClientRepository {
 }
 
 func (r *sqliteClientRepository) ClientGetAll() ([]agent.ManagedClient, error) {
-	rows, err := r.db.Query(`SELECT client_id, agent_id, hardware_id, user_name, last_seen, online FROM managed_clients`)
+	rows, err := r.db.Query(`SELECT client_id, agent_id, hardware_id, host_name, ip_address, mac_address, user_name, last_seen, online FROM managed_clients`)
 	if err != nil {
 		return nil, err
 	}
@@ -37,10 +37,13 @@ func (r *sqliteClientRepository) ClientGetAll() ([]agent.ManagedClient, error) {
 	var clients []agent.ManagedClient
 	for rows.Next() {
 		var c agent.ManagedClient
-		var hardwareID string
+		var hardwareID, hostName, ipAddress, macAddress string
 		var onlineInt int
-		err := rows.Scan(&c.ClientID, &c.AgentID, &hardwareID, &c.UserName, &c.LastSeen, &onlineInt)
+		err := rows.Scan(&c.ClientID, &c.AgentID, &hardwareID, &hostName, &ipAddress, &macAddress, &c.UserName, &c.LastSeen, &onlineInt)
 		c.DeviceInfo.HardwareID = hardwareID
+		c.DeviceInfo.HostName = hostName
+		c.DeviceInfo.IPAddress = ipAddress
+		c.DeviceInfo.MacAddress = macAddress
 		c.Online = onlineInt == 1
 		if err == nil {
 			clients = append(clients, c)
@@ -62,13 +65,13 @@ func (r *sqliteClientRepository) ClientCreate(client *agent.ManagedClient) error
 	if client.DeviceInfo.HardwareID == "" {
 		return sql.ErrNoRows
 	}
-	_, err := r.db.Exec(`INSERT INTO managed_clients (client_id, agent_id, hardware_id, user_name, last_seen, online) VALUES (?, ?, ?, ?, ?, ?)`,
-		client.ClientID, client.AgentID, client.DeviceInfo.HardwareID, client.UserName, client.LastSeen, boolToInt(client.Online))
+	_, err := r.db.Exec(`INSERT INTO managed_clients (client_id, agent_id, hardware_id, host_name, ip_address, mac_address, user_name, last_seen, online) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		client.ClientID, client.AgentID, client.DeviceInfo.HardwareID, client.DeviceInfo.HostName, client.DeviceInfo.IPAddress, client.DeviceInfo.MacAddress, client.UserName, client.LastSeen, boolToInt(client.Online))
 	if err != nil {
-		logutil.Debug("ClientRepository.Create: failed to create client %s: %v", client.ClientID, err)
+		logutil.APIDebug("ClientRepository.Create: failed to create client %s: %v", client.ClientID, err)
 		return err
 	}
-	logutil.Debug("ClientRepository.Create: created client %s", client.ClientID)
+	logutil.APIDebug("ClientRepository.Create: created client %s", client.ClientID)
 	return nil
 }
 
@@ -116,10 +119,10 @@ func (r *sqliteClientRepository) ClientUpdate(client *agent.ManagedClient) error
 	query := "UPDATE managed_clients SET " + joinFields(fields) + " WHERE client_id=?"
 	_, err = r.db.Exec(query, args...)
 	if err != nil {
-		logutil.Debug("ClientRepository.Update: failed to update client %s: %v", client.ClientID, err)
+		logutil.APIDebug("ClientRepository.Update: failed to update client %s: %v", client.ClientID, err)
 		return err
 	}
-	logutil.Debug("ClientRepository.Update: updated client %s", client.ClientID)
+	logutil.APIDebug("ClientRepository.Update: updated client %s", client.ClientID)
 	return nil
 }
 
@@ -129,10 +132,10 @@ func (r *sqliteClientRepository) ClientDeleteByID(clientID string) error {
 	}
 	_, err := r.db.Exec(`DELETE FROM managed_clients WHERE client_id=?`, clientID)
 	if err != nil {
-		logutil.Debug("ClientRepository.DeleteByID: failed to delete client %s: %v", clientID, err)
+		logutil.APIDebug("ClientRepository.DeleteByID: failed to delete client %s: %v", clientID, err)
 		return err
 	}
-	logutil.Debug("ClientRepository.DeleteByID: deleted client %s", clientID)
+	logutil.APIDebug("ClientRepository.DeleteByID: deleted client %s", clientID)
 	return nil
 }
 
@@ -140,12 +143,15 @@ func (r *sqliteClientRepository) ClientFindByID(clientID string) (*agent.Managed
 	if clientID == "" {
 		return nil, sql.ErrNoRows
 	}
-	row := r.db.QueryRow(`SELECT client_id, agent_id, hardware_id, user_name, last_seen, online FROM managed_clients WHERE client_id=?`, clientID)
+	row := r.db.QueryRow(`SELECT client_id, agent_id, hardware_id, host_name, ip_address, mac_address, user_name, last_seen, online FROM managed_clients WHERE client_id=?`, clientID)
 	var c agent.ManagedClient
-	var hardwareID string
+	var hardwareID, hostName, ipAddress, macAddress string
 	var onlineInt int
-	err := row.Scan(&c.ClientID, &c.AgentID, &hardwareID, &c.UserName, &c.LastSeen, &onlineInt)
+	err := row.Scan(&c.ClientID, &c.AgentID, &hardwareID, &hostName, &ipAddress, &macAddress, &c.UserName, &c.LastSeen, &onlineInt)
 	c.DeviceInfo.HardwareID = hardwareID
+	c.DeviceInfo.HostName = hostName
+	c.DeviceInfo.IPAddress = ipAddress
+	c.DeviceInfo.MacAddress = macAddress
 	c.Online = onlineInt == 1
 	if err == sql.ErrNoRows {
 		return nil, nil
@@ -160,12 +166,15 @@ func (r *sqliteClientRepository) ClientFindByAgentID(agentID string) (*agent.Man
 	if agentID == "" {
 		return nil, sql.ErrNoRows
 	}
-	row := r.db.QueryRow(`SELECT client_id, agent_id, hardware_id, user_name, last_seen, online FROM managed_clients WHERE agent_id=?`, agentID)
+	row := r.db.QueryRow(`SELECT client_id, agent_id, hardware_id, host_name, ip_address, mac_address, user_name, last_seen, online FROM managed_clients WHERE agent_id=?`, agentID)
 	var c agent.ManagedClient
-	var hardwareID string
+	var hardwareID, hostName, ipAddress, macAddress string
 	var onlineInt int
-	err := row.Scan(&c.ClientID, &c.AgentID, &hardwareID, &c.UserName, &c.LastSeen, &onlineInt)
+	err := row.Scan(&c.ClientID, &c.AgentID, &hardwareID, &hostName, &ipAddress, &macAddress, &c.UserName, &c.LastSeen, &onlineInt)
 	c.DeviceInfo.HardwareID = hardwareID
+	c.DeviceInfo.HostName = hostName
+	c.DeviceInfo.IPAddress = ipAddress
+	c.DeviceInfo.MacAddress = macAddress
 	c.Online = onlineInt == 1
 	if err == sql.ErrNoRows {
 		return nil, nil
@@ -180,7 +189,7 @@ func (r *sqliteClientRepository) ClientFindByUserID(userID string) ([]agent.Mana
 	if userID == "" {
 		return nil, sql.ErrNoRows
 	}
-	rows, err := r.db.Query(`SELECT client_id, agent_id, hardware_id, user_name, last_seen, online FROM managed_clients WHERE user_name=?`, userID)
+	rows, err := r.db.Query(`SELECT client_id, agent_id, hardware_id, host_name, ip_address, mac_address, user_name, last_seen, online FROM managed_clients WHERE user_name=?`, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -188,10 +197,13 @@ func (r *sqliteClientRepository) ClientFindByUserID(userID string) ([]agent.Mana
 	var clients []agent.ManagedClient
 	for rows.Next() {
 		var c agent.ManagedClient
-		var hardwareID string
+		var hardwareID, hostName, ipAddress, macAddress string
 		var onlineInt int
-		err := rows.Scan(&c.ClientID, &c.AgentID, &hardwareID, &c.UserName, &c.LastSeen, &onlineInt)
+		err := rows.Scan(&c.ClientID, &c.AgentID, &hardwareID, &hostName, &ipAddress, &macAddress, &c.UserName, &c.LastSeen, &onlineInt)
 		c.DeviceInfo.HardwareID = hardwareID
+		c.DeviceInfo.HostName = hostName
+		c.DeviceInfo.IPAddress = ipAddress
+		c.DeviceInfo.MacAddress = macAddress
 		c.Online = onlineInt == 1
 		if err == nil {
 			clients = append(clients, c)
