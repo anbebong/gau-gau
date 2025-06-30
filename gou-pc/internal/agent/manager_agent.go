@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"gou-pc/internal/logutil"
 	"os"
 	"strconv"
 	"sync"
@@ -27,7 +28,7 @@ var (
 )
 
 func LoadClients() ([]ManagedClient, error) {
-	rows, err := db.Query("SELECT client_id, agent_id, hardware_id, user_id, last_seen, online FROM managed_clients")
+	rows, err := db.Query("SELECT client_id, agent_id, hardware_id, host_name, ip_address, mac_address, user_name, last_seen, online FROM managed_clients")
 	if err != nil {
 		return nil, err
 	}
@@ -35,10 +36,13 @@ func LoadClients() ([]ManagedClient, error) {
 	var clients []ManagedClient
 	for rows.Next() {
 		var c ManagedClient
-		var hardwareID string
+		var hardwareID, hostName, ipAddress, macAddress string
 		var onlineInt int
-		err := rows.Scan(&c.ClientID, &c.AgentID, &hardwareID, &c.UserName, &c.LastSeen, &onlineInt)
+		err := rows.Scan(&c.ClientID, &c.AgentID, &hardwareID, &hostName, &ipAddress, &macAddress, &c.UserName, &c.LastSeen, &onlineInt)
 		c.DeviceInfo.HardwareID = hardwareID
+		c.DeviceInfo.HostName = hostName
+		c.DeviceInfo.IPAddress = ipAddress
+		c.DeviceInfo.MacAddress = macAddress
 		c.Online = onlineInt == 1
 		if err == nil {
 			clients = append(clients, c)
@@ -94,11 +98,20 @@ func GenClientID() string {
 
 // SaveClient lưu một client mới vào DB
 func SaveClient(c ManagedClient) error {
+	fmt.Printf("[DEBUG] SaveClient: client_id=%s, agent_id=%s, hardware_id=%s, db_ptr=%p\n", c.ClientID, c.AgentID, c.DeviceInfo.HardwareID, db)
+	// res, err := db.Exec(`INSERT OR REPLACE INTO managed_clients
 	_, err := db.Exec(`INSERT OR REPLACE INTO managed_clients
-		(client_id, agent_id, hardware_id, user_name, last_seen, online)
-		VALUES (?, ?, ?, ?, ?, ?)`,
-		c.ClientID, c.AgentID, c.DeviceInfo.HardwareID, c.UserName, c.LastSeen, boolToInt(c.Online))
-	return err
+		(client_id, agent_id, hardware_id, user_name, last_seen, online, host_name, ip_address, mac_address)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		c.ClientID, c.AgentID, c.DeviceInfo.HardwareID, c.UserName, c.LastSeen, boolToInt(c.Online),
+		c.DeviceInfo.HostName, c.DeviceInfo.IPAddress, c.DeviceInfo.MacAddress)
+	if err != nil {
+		fmt.Printf("[DEBUG] SaveClient error: %v\n", err)
+		return err
+	}
+	// affected, _ := res.RowsAffected()
+	// fmt.Printf("[DEBUG] SaveClient: affected=%d\n", affected)
+	return nil
 }
 
 func boolToInt(b bool) int {
@@ -110,8 +123,24 @@ func boolToInt(b bool) int {
 
 // UpdateClientStatus cập nhật trạng thái online và last_seen cho agent
 func UpdateClientStatus(agentID string, online bool, lastSeen string) error {
+	// result, err := db.Exec(`UPDATE managed_clients SET online=?, last_seen=? WHERE agent_id=?`, boolToInt(online), lastSeen, agentID)
 	_, err := db.Exec(`UPDATE managed_clients SET online=?, last_seen=? WHERE agent_id=?`, boolToInt(online), lastSeen, agentID)
-	return err
+	if err != nil {
+		// fmt.Printf("[DEBUG] UpdateClientStatus error: %v\n", err)
+		logutil.CoreError("[UpdateClientStatus] error: %v", err)
+		return err
+	}
+	// affected, _ := result.RowsAffected()
+	// fmt.Printf("[DEBUG] UpdateClientStatus: agent_id=%s, online=%v, last_seen=%s, affected=%d\n", agentID, online, lastSeen, affected)
+	return nil
+}
+
+// AgentExists kiểm tra agent_id có tồn tại trong DB hay không
+func AgentExists(agentID string) (bool, error) {
+	row := db.QueryRow("SELECT COUNT(*) FROM managed_clients WHERE agent_id = ?", agentID)
+	var count int
+	err := row.Scan(&count)
+	return count > 0, err
 }
 
 // SetDB cho phép gán biến db toàn cục từ bên ngoài

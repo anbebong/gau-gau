@@ -47,7 +47,7 @@ func (s *clientServiceImpl) AssignUserToClientByAgentID(agentID, username string
 	if username == "" {
 		return errors.New("username is required")
 	}
-	logutil.Debug("ClientService.AssignUserToClientByAgentID called with agentID=%s, username=%s", agentID, username)
+	logutil.APIDebug("ClientService.AssignUserToClientByAgentID called with agentID=%s, username=%s", agentID, username)
 	client, err := s.repo.ClientFindByAgentID(agentID)
 	if err != nil || client == nil {
 		return errors.New("client not found")
@@ -63,7 +63,7 @@ func (s *clientServiceImpl) AssignUserToClientByClientID(clientID, username stri
 	if username == "" {
 		return errors.New("username is required")
 	}
-	logutil.Debug("ClientService.AssignUserToClientByClientID called with clientID=%s, username=%s", clientID, username)
+	logutil.APIDebug("ClientService.AssignUserToClientByClientID called with clientID=%s, username=%s", clientID, username)
 	client, err := s.repo.ClientFindByID(clientID)
 	if err != nil || client == nil {
 		return errors.New("client not found")
@@ -73,7 +73,7 @@ func (s *clientServiceImpl) AssignUserToClientByClientID(clientID, username stri
 }
 
 func (s *clientServiceImpl) GetAllClients() ([]ManagedClientResponse, error) {
-	logutil.Debug("ClientService.GetAllClients called")
+	logutil.APIDebug("ClientService.GetAllClients called")
 	clients, err := s.repo.ClientGetAll()
 	if err != nil {
 		return nil, err
@@ -96,7 +96,7 @@ func (s *clientServiceImpl) GetClientByAgentID(agentID string) (*ManagedClientRe
 	if agentID == "" {
 		return nil, errors.New("agentID is required")
 	}
-	logutil.Debug("ClientService.GetClientByAgentID called with agentID=%s", agentID)
+	logutil.APIDebug("ClientService.GetClientByAgentID called with agentID=%s", agentID)
 	c, err := s.repo.ClientFindByAgentID(agentID)
 	if err != nil || c == nil {
 		return nil, err
@@ -116,7 +116,7 @@ func (s *clientServiceImpl) GetClientByID(clientID string) (*ManagedClientRespon
 	if clientID == "" {
 		return nil, errors.New("clientID is required")
 	}
-	logutil.Debug("ClientService.GetClientByID called with clientID=%s", clientID)
+	logutil.APIDebug("ClientService.GetClientByID called with clientID=%s", clientID)
 	c, err := s.repo.ClientFindByID(clientID)
 	if err != nil || c == nil {
 		return nil, err

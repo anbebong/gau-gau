@@ -29,7 +29,7 @@ func InjectJWTConfig(secret string, expireSeconds int64) {
 }
 
 func LoginHandler(c *gin.Context) {
-	logutil.Debug("LoginHandler called")
+	logutil.APIDebug("LoginHandler called")
 	var req struct {
 		Username string `json:"username"`
 		Password string `json:"password"`
@@ -38,26 +38,26 @@ func LoginHandler(c *gin.Context) {
 	bodyBytes, _ := c.GetRawData()
 	fmt.Printf("[DEBUG] LoginHandler: raw request body: %s\n", string(bodyBytes))
 	if err := json.Unmarshal(bodyBytes, &req); err != nil {
-		logutil.Debug("LoginHandler: invalid request body (unmarshal)")
+		logutil.APIDebug("LoginHandler: invalid request body (unmarshal)")
 		response.Error(c, http.StatusBadRequest, "invalid request body")
 		return
 	}
 	fmt.Printf("[DEBUG] LoginHandler: parsed username: %s, password: %s\n", req.Username, req.Password)
 	if req.Username == "" || req.Password == "" {
-		logutil.Debug("LoginHandler: missing username or password")
+		logutil.APIDebug("LoginHandler: missing username or password")
 		response.Error(c, http.StatusBadRequest, "username and password required")
 		return
 	}
 	user, err := userService.UserGetByUsername(req.Username)
 	fmt.Printf("[DEBUG] userService.GetByUsername(%s) => user: %+v, err: %v\n", req.Username, user, err)
 	if err != nil || user == nil {
-		logutil.Debug("LoginHandler: invalid username or password")
+		logutil.APIDebug("LoginHandler: invalid username or password")
 		response.Error(c, http.StatusUnauthorized, "invalid username or password")
 		return
 	}
 	fmt.Printf("[DEBUG] LoginHandler: user in DB: username=%s, password=%s\n", user.Username, user.Password)
 	if user.Password != req.Password {
-		logutil.Debug("LoginHandler: password mismatch for user %s", req.Username)
+		logutil.APIDebug("LoginHandler: password mismatch for user %s", req.Username)
 		response.Error(c, http.StatusUnauthorized, "invalid username or password")
 		return
 	}
@@ -88,7 +88,7 @@ func LoginHandler(c *gin.Context) {
 }
 
 func CreateUserHandler(c *gin.Context) {
-	logutil.Debug("CreateUserHandler called")
+	logutil.APIDebug("CreateUserHandler called")
 	var req struct {
 		Username string `json:"username"`
 		Password string `json:"password"`
@@ -96,12 +96,12 @@ func CreateUserHandler(c *gin.Context) {
 		Email    string `json:"email"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		logutil.Debug("CreateUserHandler: invalid request body")
+		logutil.APIDebug("CreateUserHandler: invalid request body")
 		response.Error(c, http.StatusBadRequest, "invalid request body")
 		return
 	}
 	if req.Username == "" || req.Password == "" {
-		logutil.Debug("CreateUserHandler: missing username or password")
+		logutil.APIDebug("CreateUserHandler: missing username or password")
 		response.Error(c, http.StatusBadRequest, "username and password required")
 		return
 	}
@@ -119,20 +119,20 @@ func CreateUserHandler(c *gin.Context) {
 	if user.ID == "" {
 		user.ID = generateUUID()
 	}
-	logutil.Debug("CreateUserHandler: creating user %+v", user)
+	logutil.APIDebug("CreateUserHandler: creating user %+v", user)
 	if err := userService.UserCreate(user); err != nil {
-		logutil.Debug("CreateUserHandler: failed to create user: %v", err)
+		logutil.APIDebug("CreateUserHandler: failed to create user: %v", err)
 		response.Error(c, http.StatusBadRequest, err.Error())
 		return
 	}
 	// Lấy lại user vừa tạo từ DB để đảm bảo trả về đúng dữ liệu đã lưu
 	createdUser, err := userService.UserGetByUsername(user.Username)
 	if err != nil || createdUser == nil {
-		logutil.Debug("CreateUserHandler: failed to fetch created user: %v", err)
+		logutil.APIDebug("CreateUserHandler: failed to fetch created user: %v", err)
 		response.Error(c, http.StatusInternalServerError, "failed to fetch created user")
 		return
 	}
-	logutil.Debug("CreateUserHandler: user created successfully: %+v", createdUser)
+	logutil.APIDebug("CreateUserHandler: user created successfully: %+v", createdUser)
 	safeUser := gin.H{
 		"id":         createdUser.ID,
 		"username":   createdUser.Username,
@@ -234,25 +234,25 @@ func ListUsersHandler(c *gin.Context) {
 }
 
 func UpdateUserInfoHandler(c *gin.Context) {
-	logutil.Debug("UpdateUserInfoHandler called")
+	logutil.APIDebug("UpdateUserInfoHandler called")
 	var req struct {
 		Username string `json:"username"`
 		FullName string `json:"full_name"`
 		Email    string `json:"email"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		logutil.Debug("UpdateUserInfoHandler: invalid request body")
+		logutil.APIDebug("UpdateUserInfoHandler: invalid request body")
 		response.Error(c, http.StatusBadRequest, "invalid request body")
 		return
 	}
 	if req.Username == "" {
-		logutil.Debug("UpdateUserInfoHandler: missing username")
+		logutil.APIDebug("UpdateUserInfoHandler: missing username")
 		response.Error(c, http.StatusBadRequest, "username required")
 		return
 	}
 	user, err := userService.UserGetByUsername(req.Username)
 	if err != nil || user == nil {
-		logutil.Debug("UpdateUserInfoHandler: user not found: %v", err)
+		logutil.APIDebug("UpdateUserInfoHandler: user not found: %v", err)
 		response.Error(c, http.StatusBadRequest, "user not found")
 		return
 	}
@@ -266,39 +266,39 @@ func UpdateUserInfoHandler(c *gin.Context) {
 		updated = true
 	}
 	if !updated {
-		logutil.Debug("UpdateUserInfoHandler: nothing to update for user %s", req.Username)
+		logutil.APIDebug("UpdateUserInfoHandler: nothing to update for user %s", req.Username)
 		response.Success(c, gin.H{"message": "no changes"})
 		return
 	}
 	if err := userService.UserUpdate(user); err != nil {
-		logutil.Debug("UpdateUserInfoHandler: failed to update user: %v", err)
+		logutil.APIDebug("UpdateUserInfoHandler: failed to update user: %v", err)
 		response.Error(c, http.StatusBadRequest, err.Error())
 		return
 	}
-	logutil.Debug("UpdateUserInfoHandler: user info updated successfully: %s", req.Username)
+	logutil.APIDebug("UpdateUserInfoHandler: user info updated successfully: %s", req.Username)
 	response.Success(c, gin.H{"message": "user info updated successfully"})
 }
 
 func DeleteUserHandler(c *gin.Context) {
-	logutil.Debug("DeleteUserHandler called")
+	logutil.APIDebug("DeleteUserHandler called")
 	var req struct {
 		UserID string `json:"username"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		logutil.Debug("DeleteUserHandler: invalid request body")
+		logutil.APIDebug("DeleteUserHandler: invalid request body")
 		response.Error(c, http.StatusBadRequest, "invalid request body")
 		return
 	}
 	if req.UserID == "" {
-		logutil.Debug("DeleteUserHandler: missing username")
+		logutil.APIDebug("DeleteUserHandler: missing username")
 		response.Error(c, http.StatusBadRequest, "username required")
 		return
 	}
 	if err := userService.UserDeleteByUsername(req.UserID); err != nil {
-		logutil.Debug("DeleteUserHandler: failed to delete user: %v", err)
+		logutil.APIDebug("DeleteUserHandler: failed to delete user: %v", err)
 		response.Error(c, http.StatusBadRequest, err.Error())
 		return
 	}
-	logutil.Debug("DeleteUserHandler: user deleted successfully: %s", req.UserID)
+	logutil.APIDebug("DeleteUserHandler: user deleted successfully: %s", req.UserID)
 	response.Success(c, gin.H{"message": "user deleted successfully"})
 }

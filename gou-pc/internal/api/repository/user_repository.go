@@ -100,10 +100,10 @@ func (r *sqliteUserRepository) UserCreate(user *model.User) error {
 	_, err := r.db.Exec(`INSERT INTO users (id, username, password, email, full_name, role, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
 		user.ID, user.Username, user.Password, user.Email, user.FullName, user.Role, user.CreatedAt, user.UpdatedAt)
 	if err != nil {
-		logutil.Debug("UserRepository.Create: failed to create user %s: %v", user.Username, err)
+		logutil.APIDebug("UserRepository.Create: failed to create user %s: %v", user.Username, err)
 		return err
 	}
-	logutil.Debug("UserRepository.Create: created user %s", user.Username)
+	logutil.APIDebug("UserRepository.Create: created user %s", user.Username)
 	return nil
 }
 
@@ -144,10 +144,10 @@ func (r *sqliteUserRepository) UserUpdate(user *model.User) error {
 	query := "UPDATE users SET " + joinFields(fields) + " WHERE id=?"
 	_, err := r.db.Exec(query, args...)
 	if err != nil {
-		logutil.Debug("UserRepository.Update: failed to update user %s: %v", user.Username, err)
+		logutil.APIDebug("UserRepository.Update: failed to update user %s: %v", user.Username, err)
 		return err
 	}
-	logutil.Debug("UserRepository.Update: updated user %s", user.Username)
+	logutil.APIDebug("UserRepository.Update: updated user %s", user.Username)
 	return nil
 }
 
@@ -166,13 +166,13 @@ func (r *sqliteUserRepository) UserDeleteByUsername(username string) error {
 	res, err := r.db.Exec(`DELETE FROM users WHERE username=?`, username)
 	n, _ := res.RowsAffected()
 	if err != nil {
-		logutil.Debug("UserRepository.DeleteByUsername: failed to delete user %s: %v", username, err)
+		logutil.APIDebug("UserRepository.DeleteByUsername: failed to delete user %s: %v", username, err)
 		return err
 	}
 	if n == 0 {
 		return errors.New("user not found")
 	}
-	logutil.Debug("UserRepository.DeleteByUsername: deleted user %s", username)
+	logutil.APIDebug("UserRepository.DeleteByUsername: deleted user %s", username)
 	return nil
 }
 
@@ -180,12 +180,12 @@ func (r *sqliteUserRepository) UserDeleteByID(id string) error {
 	res, err := r.db.Exec(`DELETE FROM users WHERE id=?`, id)
 	n, _ := res.RowsAffected()
 	if err != nil {
-		logutil.Debug("UserRepository.DeleteByID: failed to delete user id=%s: %v", id, err)
+		logutil.APIDebug("UserRepository.DeleteByID: failed to delete user id=%s: %v", id, err)
 		return err
 	}
 	if n == 0 {
 		return errors.New("user not found")
 	}
-	logutil.Debug("UserRepository.DeleteByID: deleted user id=%s", id)
+	logutil.APIDebug("UserRepository.DeleteByID: deleted user id=%s", id)
 	return nil
 }

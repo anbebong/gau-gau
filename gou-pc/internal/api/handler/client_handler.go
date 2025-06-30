@@ -19,14 +19,14 @@ func InjectClientService(s service.ClientService) { clientService = s }
 func InjectOTPService(s service.OTPService)       { otpService = s }
 
 func HandleListClients(c *gin.Context) {
-	logutil.Debug("HandleListClients called")
+	logutil.APIDebug("HandleListClients called")
 	clients, err := clientService.GetAllClients()
 	if err != nil {
-		logutil.Debug("HandleListClients error: %v", err)
+		logutil.APIDebug("HandleListClients error: %v", err)
 		response.Error(c, http.StatusInternalServerError, err.Error())
 		return
 	}
-	logutil.Debug("HandleListClients success, %d clients", len(clients))
+	logutil.APIDebug("HandleListClients success, %d clients", len(clients))
 	response.Success(c, clients)
 }
 
