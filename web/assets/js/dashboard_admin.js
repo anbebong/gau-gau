@@ -160,6 +160,7 @@ function showSection(section) {
         content.style.display = content.id === 'section-' + section ? '' : 'none';
     });
     if (section === 'devices') loadDevices();
+    if (section === 'users') loadUsers();
 }
 function renderDeviceStatus(online) {
     return online ? '<span class="device-status online">ONLINE</span>' : '<span class="device-status offline">OFFLINE</span>';
@@ -256,6 +257,336 @@ async function loadDevices() {
         tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:#e74c3c;">Lỗi kết nối server.</td></tr>';
     }
 }
+function showOtpBox(otp, expireIn, agentId) {
+    // Xóa box cũ nếu có
+    document.querySelectorAll('.otp-modal').forEach(e => e.remove());
+    const modal = document.createElement('div');
+    modal.className = 'otp-modal';
+    modal.innerHTML = `
+        <div class="otp-modal-content">
+            <div class="otp-title">Mã OTP Thiết Bị <span class="otp-agent-id">(${agentId})</span></div>
+            <div class="otp-code">${otp}</div>
+            <div class="otp-expire">Hết hạn sau <span>${expireIn}</span> giây</div>
+            <button class="otp-close">Đóng</button>
+        </div>
+    `;
+    document.body.appendChild(modal);
+    // Đếm ngược thời gian hết hạn
+    let time = expireIn;
+    const expireSpan = modal.querySelector('.otp-expire span');
+    const timer = setInterval(() => {
+        time--;
+        if (time <= 0) {
+            clearInterval(timer);
+            modal.remove();
+        } else {
+            expireSpan.textContent = time;
+        }
+    }, 1000);
+    // Đóng khi bấm nút
+    modal.querySelector('.otp-close').onclick = () => {
+        clearInterval(timer);
+        modal.remove();
+    };
+    // Tự động ẩn sau 10s nếu chưa hết hạn
+    setTimeout(() => { if (document.body.contains(modal)) modal.remove(); }, 10000);
+}
+function showDeleteConfirm(agentId, onConfirm) {
+    // Xóa modal cũ nếu có
+    document.querySelectorAll('.delete-modal').forEach(e => e.remove());
+    const modal = document.createElement('div');
+    modal.className = 'delete-modal';
+    modal.innerHTML = `
+        <div class="delete-modal-content">
+            <div class="delete-title">Xác nhận xóa thiết bị</div>
+            <div class="delete-desc">Bạn có chắc chắn muốn xóa thiết bị với AGENT ID: <b>${agentId}</b>?</div>
+            <div class="delete-actions">
+                <button class="delete-cancel">Hủy</button>
+                <button class="delete-confirm">Xóa</button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+    modal.querySelector('.delete-cancel').onclick = () => modal.remove();
+    modal.querySelector('.delete-confirm').onclick = () => {
+        modal.remove();
+        onConfirm();
+    };
+}
+// Thêm hàm render bảng user
+function renderUserTable(users) {
+    const tbody = document.getElementById('user-tbody');
+    if (!tbody) return;
+    if (!users.length) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#888;">Không có user nào.</td></tr>';
+        return;
+    }
+    tbody.innerHTML = '';
+    users.forEach(user => {
+        tbody.innerHTML += `
+        <tr>
+            <td>${user.username || ''}</td>
+            <td>${user.full_name || ''}</td>
+            <td>${user.email || ''}</td>
+            <td>${user.role || ''}</td>
+            <td>${user.created_at ? user.created_at.split('T')[0] : ''}</td>
+            <td>
+                <button class="btn-edit" data-uid="${user.id}">Chỉnh sửa</button>
+                <button class="btn-password" data-uid="${user.id}">Đổi MK</button>
+                <button class="btn-delete-user" data-uid="${user.id}"${user.role==='admin'?' disabled':''}>Xóa</button>
+            </td>
+        </tr>`;
+    });
+}
+
+// ========== USER MANAGEMENT ========== //
+async function loadUsers() {
+    const tbody = document.getElementById('user-tbody');
+    if (!tbody) return;
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#888;">Đang tải dữ liệu...</td></tr>';
+    try {
+        const res = await fetchWithAuth('users');
+        if (res.ok) {
+            const data = await res.json();
+            const users = Array.isArray(data.data) ? data.data : [];
+            if (!users.length) {
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#888;">Không có user nào.</td></tr>';
+                return;
+            }
+            tbody.innerHTML = '';
+            users.forEach(user => {
+                tbody.innerHTML += `
+                <tr data-username="${user.username}">
+                    <td>${user.username}</td>
+                    <td>${user.full_name || ''}</td>
+                    <td>${user.email || ''}</td>
+                    <td>${user.role}</td>
+                    <td>${user.created_at ? new Date(user.created_at).toLocaleString() : ''}</td>
+                    <td>
+                        <button class="btn-edit">Chỉnh sửa</button>
+                        <button class="btn-password">Đổi MK</button>
+                        <button class="btn-delete-user" ${user.role==='admin'?'disabled':''}>Xóa</button>
+                    </td>
+                </tr>`;
+            });
+        } else {
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#e74c3c;">Không thể tải user.</td></tr>';
+        }
+    } catch (e) {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#e74c3c;">Lỗi kết nối server.</td></tr>';
+    }
+}
+
+// Modal chỉnh sửa user
+function showEditUserModal(user, onSave) {
+    document.querySelectorAll('.edit-user-modal').forEach(e => e.remove());
+    const modal = document.createElement('div');
+    modal.className = 'edit-user-modal';
+    modal.innerHTML = `
+        <div class="edit-user-modal-content">
+            <div class="edit-title">Chỉnh sửa user: <b>${user.username}</b></div>
+            <div class="edit-form">
+                <label>Họ tên</label>
+                <input type="text" class="edit-fullname" value="${user.full_name||''}">
+                <label>Email</label>
+                <input type="email" class="edit-email" value="${user.email||''}">
+                <label>Role</label>
+                <select class="edit-role">
+                    <option value="user" ${user.role==='user'?'selected':''}>user</option>
+                    <option value="admin" ${user.role==='admin'?'selected':''}>admin</option>
+                </select>
+            </div>
+            <div class="edit-actions">
+                <button class="edit-cancel">Hủy</button>
+                <button class="edit-save">Lưu</button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+    modal.querySelector('.edit-cancel').onclick = () => modal.remove();
+    modal.querySelector('.edit-save').onclick = () => {
+        const full_name = modal.querySelector('.edit-fullname').value.trim();
+        const email = modal.querySelector('.edit-email').value.trim();
+        const role = modal.querySelector('.edit-role').value;
+        onSave({ full_name, email, role });
+        modal.remove();
+    };
+}
+
+// Modal đổi mật khẩu user
+function showChangePasswordModal(username, onSave) {
+    document.querySelectorAll('.change-password-modal').forEach(e => e.remove());
+    const modal = document.createElement('div');
+    modal.className = 'change-password-modal';
+    modal.innerHTML = `
+        <div class="change-password-modal-content">
+            <div class="change-title">Đổi mật khẩu cho <b>${username}</b></div>
+            <div class="change-form">
+                <label>Mật khẩu mới</label>
+                <input type="password" class="change-password" autocomplete="new-password">
+            </div>
+            <div class="change-actions">
+                <button class="change-cancel">Hủy</button>
+                <button class="change-save">Lưu</button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+    modal.querySelector('.change-cancel').onclick = () => modal.remove();
+    modal.querySelector('.change-save').onclick = () => {
+        const password = modal.querySelector('.change-password').value.trim();
+        if (!password) {
+            showToast('Vui lòng nhập mật khẩu mới!', 'error');
+            return;
+        }
+        onSave(password);
+        modal.remove();
+    };
+}
+
+// Modal xác nhận xóa user
+function showDeleteUserConfirm(username, onConfirm) {
+    document.querySelectorAll('.delete-user-modal').forEach(e => e.remove());
+    const modal = document.createElement('div');
+    modal.className = 'delete-user-modal';
+    modal.innerHTML = `
+        <div class="delete-user-modal-content">
+            <div class="delete-title">Xác nhận xóa user</div>
+            <div class="delete-desc">Bạn có chắc chắn muốn xóa user <b>${username}</b>?</div>
+            <div class="delete-actions">
+                <button class="delete-cancel">Hủy</button>
+                <button class="delete-confirm">Xóa</button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+    modal.querySelector('.delete-cancel').onclick = () => modal.remove();
+    modal.querySelector('.delete-confirm').onclick = () => {
+        modal.remove();
+        onConfirm();
+    };
+}
+
+// Modal tạo mới user
+function showAddUserModal(onSave) {
+    document.querySelectorAll('.add-user-modal').forEach(e => e.remove());
+    const modal = document.createElement('div');
+    modal.className = 'add-user-modal';
+    modal.innerHTML = `
+        <div class="edit-user-modal-content">
+            <div class="edit-title">Tạo mới user</div>
+            <div class="edit-form">
+                <label>Tài khoản (username)</label>
+                <input type="text" class="add-username" autocomplete="off" required>
+                <label>Họ tên</label>
+                <input type="text" class="add-fullname" autocomplete="off" required>
+                <label>Email</label>
+                <input type="email" class="add-email" autocomplete="off">
+                <label>Quyền</label>
+                <select class="add-role">
+                    <option value="user">user</option>
+                    <option value="admin">admin</option>
+                </select>
+                <label>Mật khẩu</label>
+                <input type="password" class="add-password" autocomplete="new-password" required>
+            </div>
+            <div class="edit-actions">
+                <button class="edit-cancel">Hủy</button>
+                <button class="edit-save">Tạo mới</button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+    modal.querySelector('.edit-cancel').onclick = () => modal.remove();
+    modal.querySelector('.edit-save').onclick = () => {
+        const username = modal.querySelector('.add-username').value.trim();
+        const full_name = modal.querySelector('.add-fullname').value.trim();
+        const email = modal.querySelector('.add-email').value.trim();
+        const role = modal.querySelector('.add-role').value;
+        const password = modal.querySelector('.add-password').value.trim();
+        if (!username || !full_name || !password) {
+            showToast('Vui lòng nhập đủ thông tin bắt buộc!', 'error');
+            return;
+        }
+        onSave({ username, full_name, email, role, password });
+        modal.remove();
+    };
+}
+
+// Sự kiện thao tác user
+function setupUserActions() {
+    const tbody = document.getElementById('user-tbody');
+    if (!tbody) return;
+    tbody.addEventListener('click', async function(e) {
+        const target = e.target;
+        const tr = target.closest('tr');
+        if (!tr) return;
+        const username = tr.getAttribute('data-username');
+        if (target.classList.contains('btn-edit')) {
+            // Lấy dữ liệu user hiện tại
+            const tds = tr.children;
+            const user = {
+                username,
+                full_name: tds[1].textContent,
+                email: tds[2].textContent,
+                role: tds[3].textContent
+            };
+            showEditUserModal(user, async (data) => {
+                try {
+                    const res = await fetchWithAuth(`users/update`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ username, ...data })
+                    });
+                    if (res.ok) {
+                        showToast('Cập nhật user thành công!', 'success');
+                        loadUsers();
+                    } else {
+                        showToast('Cập nhật user thất bại!', 'error');
+                    }
+                } catch (e) {
+                    showToast('Lỗi kết nối khi cập nhật user!', 'error');
+                }
+            });
+        } else if (target.classList.contains('btn-password')) {
+            showChangePasswordModal(username, async (password) => {
+                try {
+                    const res = await fetchWithAuth(`users/change-password`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ username, password })
+                    });
+                    if (res.ok) {
+                        showToast('Đổi mật khẩu thành công!', 'success');
+                    } else {
+                        showToast('Đổi mật khẩu thất bại!', 'error');
+                    }
+                } catch (e) {
+                    showToast('Lỗi kết nối khi đổi mật khẩu!', 'error');
+                }
+            });
+        } else if (target.classList.contains('btn-delete-user')) {
+            showDeleteUserConfirm(username, async () => {
+                try {
+                    const res = await fetchWithAuth(`users/delete`, {
+                        method: 'DELETE',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ username })
+                    });
+                    if (res.ok) {
+                        showToast('Đã xóa user.', 'success');
+                        loadUsers();
+                    } else {
+                        showToast('Xóa user thất bại!', 'error');
+                    }
+                } catch (e) {
+                    showToast('Lỗi kết nối khi xóa user!', 'error');
+                }
+            });
+        }
+    });
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     protectAdminDashboard();
     loadOverview();
@@ -275,4 +606,92 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     // Hiển thị mặc định section overview
     showSection('overview');
+
+    // Gán sự kiện cho các nút OTP và Xóa trong bảng thiết bị
+    const deviceTbody = document.getElementById('device-tbody');
+    if (deviceTbody) {
+        deviceTbody.addEventListener('click', async function(e) {
+            const target = e.target;
+            const tr = target.closest('tr');
+            if (!tr) return;
+            const agent_id = tr.children[0]?.textContent;
+            // Lấy client_id từ thuộc tính data-clientid nếu cần
+            let client_id = tr.getAttribute('data-clientid');
+            if (!client_id && tr.children[0]) client_id = tr.children[0].getAttribute('data-clientid');
+            if (target.classList.contains('btn-otp') && agent_id) {
+                // Gọi API lấy OTP
+                try {
+                    const res = await fetchWithAuth(`clients/${encodeURIComponent(agent_id)}/otp`);
+                    if (res.ok) {
+                        const data = await res.json();
+                        if (data && data.data && data.data.otp) {
+                            showOtpBox(data.data.otp, data.data.expire_in || 0, agent_id);
+                        } else {
+                            showToast('Lấy OTP thành công!', 'success');
+                        }
+                    } else {
+                        showToast('Lấy OTP thất bại!', 'error');
+                    }
+                } catch (e) {
+                    showToast('Lỗi kết nối khi lấy OTP!', 'error');
+                }
+            } else if (target.classList.contains('btn-delete')) {
+                // Gọi API xóa thiết bị
+                if (!agent_id) {
+                    showToast('Không tìm thấy agent_id để xóa!', 'error');
+                    return;
+                }
+                showDeleteConfirm(agent_id, async () => {
+                    try {
+                        const res = await fetchWithAuth('clients/delete-agentid', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ agent_id })
+                        });
+                        if (res.ok) {
+                            showToast('Đã xóa thiết bị.', 'success');
+                            loadDevices();
+                        } else {
+                            showToast('Xóa thiết bị thất bại!', 'error');
+                        }
+                    } catch (e) {
+                        showToast('Lỗi kết nối khi xóa thiết bị!', 'error');
+                    }
+                });
+            }
+        });
+    }
+    // Khi chuyển tab users thì load lại bảng user
+    const showSectionOrigin = showSection;
+    window.showSection = function(section) {
+        showSectionOrigin(section);
+        if (section === 'users') {
+            loadUsers();
+        }
+    };
+    loadUsers();
+    setupUserActions();
+    // Sự kiện nút tạo mới user
+    const btnAddUser = document.getElementById('btn-add-user');
+    if (btnAddUser) {
+        btnAddUser.onclick = function() {
+            showAddUserModal(async (data) => {
+                try {
+                    const res = await fetchWithAuth('users/create', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(data)
+                    });
+                    if (res.ok) {
+                        showToast('Tạo user thành công!', 'success');
+                        loadUsers();
+                    } else {
+                        showToast('Tạo user thất bại!', 'error');
+                    }
+                } catch (e) {
+                    showToast('Lỗi kết nối khi tạo user!', 'error');
+                }
+            });
+        };
+    }
 });

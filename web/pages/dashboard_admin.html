@@ -3,7 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Dashboard - Quản lý hệ thống</title>
+    <title>Quản lý hệ thống</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../assets/css/style.css">
 </head>
 <body>
@@ -13,13 +16,12 @@
             <li><a href="#" class="active">Tổng quan</a></li>
             <li><a href="#">Quản lý thiết bị</a></li>
             <li><a href="#">Quản lý người dùng</a></li>
-            <li><a href="#">Cảnh báo</a></li>
             <li><a href="#">Báo cáo</a></li>
             <li><a href="#">Cài đặt</a></li>
         </ul>
     </div>
     <div class="header">
-        <span>Admin Dashboard - Quản lý hệ thống</span>
+        <span></span>
         <div class="user">
             <span id="admin-username">ADMIN</span>
             <button class="logout-btn">Đăng xuất</button>
@@ -97,6 +99,30 @@
                     </thead>
                     <tbody id="device-tbody">
                         <tr><td colspan="7" style="text-align:center;color:#888;">Đang tải dữ liệu...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <!-- Quản lý người dùng -->
+        <div class="main-section" id="section-users" style="display:none;">
+            <h2 style="margin-bottom: 18px;display:flex;align-items:center;justify-content:space-between;">
+                Quản lý người dùng
+                <button id="btn-add-user" style="background:linear-gradient(90deg,#4d3afa 60%,#8a31f8 100%);color:#fff;border:none;border-radius:8px;padding:8px 22px;font-weight:bold;font-size:15px;cursor:pointer;box-shadow:0 2px 8px rgba(106,90,249,0.08);transition:background 0.2s;">+ Tạo mới user</button>
+            </h2>
+            <div class="user-table-wrap">
+                <table class="user-table">
+                    <thead>
+                        <tr>
+                            <th>TÀI KHOẢN</th>
+                            <th>HỌ TÊN</th>
+                            <th>EMAIL</th>
+                            <th>QUYỀN</th>
+                            <th>NGÀY TẠO</th>
+                            <th>THAO TÁC</th>
+                        </tr>
+                    </thead>
+                    <tbody id="user-tbody">
+                        <tr><td colspan="6" style="text-align:center;color:#888;">Đang tải dữ liệu...</td></tr>
                     </tbody>
                 </table>
             </div>

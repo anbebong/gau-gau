@@ -12,19 +12,19 @@
 #include <unknwn.h>
 #include "Dll.h"
 #include "helpers.h"
+#include "CSampleProviderFilter.h" // Thêm include cho filter
+#include "guid.h" // Đảm bảo có CLSID_CSampleProviderFilter
 
 static long g_cRef = 0;   // global dll reference count
 HINSTANCE g_hinst = NULL; // global dll hinstance
 
 extern HRESULT CSample_CreateInstance(__in REFIID riid, __deref_out void** ppv);
-EXTERN_C GUID CLSID_CSample;
+extern HRESULT CSampleProviderFilter_CreateInstance(__in REFIID riid, __deref_out void** ppv);
 
 class CClassFactory : public IClassFactory
 {
 public:
-    CClassFactory() : _cRef(1)
-    {
-    }
+    CClassFactory(REFCLSID clsid) : _cRef(1), _clsid(clsid) {}
 
     // IUnknown
     IFACEMETHODIMP QueryInterface(__in REFIID riid, __deref_out void **ppv)
@@ -53,17 +53,21 @@ public:
     // IClassFactory
     IFACEMETHODIMP CreateInstance(__in IUnknown* pUnkOuter, __in REFIID riid, __deref_out void **ppv)
     {
-        HRESULT hr;
-        if (!pUnkOuter)
-        {
-            hr = CSample_CreateInstance(riid, ppv);
-        }
-        else
+        if (pUnkOuter)
         {
             *ppv = NULL;
-            hr = CLASS_E_NOAGGREGATION;
+            return CLASS_E_NOAGGREGATION;
         }
-        return hr;
+        if (_clsid == CLSID_CSample)
+        {
+            return CSample_CreateInstance(riid, ppv);
+        }
+        else if (_clsid == CLSID_CSampleProviderFilter)
+        {
+            return CSampleProviderFilter_CreateInstance(riid, ppv);
+        }
+        *ppv = NULL;
+        return CLASS_E_CLASSNOTAVAILABLE;
     }
 
     IFACEMETHODIMP LockServer(__in BOOL bLock)
@@ -80,36 +84,26 @@ public:
     }
 
 private:
-    ~CClassFactory()
-    {
-    }
+    ~CClassFactory() {}
     long _cRef;
+    CLSID _clsid;
 };
 
 HRESULT CClassFactory_CreateInstance(__in REFCLSID rclsid, __in REFIID riid, __deref_out void **ppv)
 {
     *ppv = NULL;
-
-    HRESULT hr;
-
-    if (CLSID_CSample == rclsid)
+    if (rclsid == CLSID_CSample || rclsid == CLSID_CSampleProviderFilter)
     {
-        CClassFactory* pcf = new CClassFactory();
+        CClassFactory* pcf = new CClassFactory(rclsid);
         if (pcf)
         {
-            hr = pcf->QueryInterface(riid, ppv);
+            HRESULT hr = pcf->QueryInterface(riid, ppv);
             pcf->Release();
+            return hr;
         }
-        else
-        {
-            hr = E_OUTOFMEMORY;
-        }
+        return E_OUTOFMEMORY;
     }
-    else
-    {
-        hr = CLASS_E_CLASSNOTAVAILABLE;
-    }
-    return hr;
+    return CLASS_E_CLASSNOTAVAILABLE;
 }
 
 void DllAddRef()

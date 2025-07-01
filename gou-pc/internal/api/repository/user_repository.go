@@ -114,10 +114,7 @@ func (r *sqliteUserRepository) UserUpdate(user *model.User) error {
 	// Build dynamic update query
 	fields := []string{}
 	args := []interface{}{}
-	if user.Username != "" {
-		fields = append(fields, "username=?")
-		args = append(args, user.Username)
-	}
+	// Không cho phép update username (username là khóa)
 	if user.Password != "" {
 		fields = append(fields, "password=?")
 		args = append(args, user.Password)
@@ -140,8 +137,8 @@ func (r *sqliteUserRepository) UserUpdate(user *model.User) error {
 	if len(fields) == 0 {
 		return errors.New("no fields to update")
 	}
-	args = append(args, user.ID)
-	query := "UPDATE users SET " + joinFields(fields) + " WHERE id=?"
+	args = append(args, user.Username)
+	query := "UPDATE users SET " + joinFields(fields) + " WHERE username=?"
 	_, err := r.db.Exec(query, args...)
 	if err != nil {
 		logutil.APIDebug("UserRepository.Update: failed to update user %s: %v", user.Username, err)

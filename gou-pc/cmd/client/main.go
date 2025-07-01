@@ -7,17 +7,22 @@ import (
 	"gou-pc/internal/config"
 	"gou-pc/internal/logutil"
 	"os"
+	"os/exec"
+	"strings"
 	"time"
+
+	"github.com/kardianos/service"
 )
 
-func main() {
+// Đóng gói toàn bộ logic cũ vào hàm mainLogic
+func mainLogic() {
 	cfg := config.DefaultClientConfig()
 	if err := logutil.InitCoreLogger(cfg.LogFile, logutil.DEBUG); err != nil {
 		fmt.Printf("Could not open log file: %v\n", err)
 		os.Exit(1)
 	}
 
-	if len(os.Args) >= 2 {
+	if len(os.Args) >= 2 && os.Args[1] != "install-service" && os.Args[1] != "uninstall-service" {
 		cfg.ServerAddr = os.Args[1]
 	}
 
@@ -35,10 +40,16 @@ func main() {
 		needRegister = true
 	}
 
-	a := &agent.Agent{}
-	if err := a.Connect(cfg.ServerAddr, 10*time.Second); err != nil {
-		logutil.CoreError("failed to connect: %v", err)
-		os.Exit(1)
+	var a *agent.Agent
+	for {
+		a = &agent.Agent{}
+		if err := a.Connect(cfg.ServerAddr, 10*time.Second); err != nil {
+			logutil.CoreError("failed to connect: %v", err)
+			logutil.CoreInfo("Retrying connect after 10s...")
+			time.Sleep(10 * time.Second)
+			continue
+		}
+		break
 	}
 	defer a.Close()
 
@@ -65,25 +76,37 @@ func main() {
 					Payload: nil,
 				},
 			}
-			if err := a.Send(otpMsg); err != nil {
-				logutil.CoreError("Send OTP error: %v", err)
-				return err
-			}
-			resp, err := a.Receive()
+			resp, err := a.Request(otpMsg, 10*time.Second)
 			if err != nil {
-				logutil.CoreError("Receive OTP error: %v", err)
+				logutil.CoreError("Request OTP error: %v", err)
 				return err
 			}
 			logutil.CoreInfo("Received OTP response: %+v", resp)
+			// Kiểm tra kiểu dữ liệu trả về
 			if m, ok := resp.Data.(map[string]interface{}); ok {
-				if otp, ok := m["otp"].(string); ok {
-					logutil.CoreInfo("Parsed OTP: %s", otp)
-					logutil.CoreInfo("Received OTP: {agent_id:%s, otp:%s}", m["agent_id"], m["otp"])
-					otpChan <- otp
-					return nil
+				if otp, ok := m["otp"]; ok {
+					switch v := otp.(type) {
+					case string:
+						logutil.CoreInfo("Parsed OTP (string): %s", v)
+						otpChan <- v
+						return nil
+					case float64:
+						logutil.CoreInfo("Parsed OTP (float64): %.0f", v)
+						otpChan <- fmt.Sprintf("%.0f", v)
+						return nil
+					default:
+						logutil.CoreError("OTP type unknown: %T, value: %+v", v, v)
+					}
+				} else {
+					logutil.CoreError("OTP field not found in response: %+v", m)
 				}
+			} else if s, ok := resp.Data.(string); ok {
+				// Nếu trả về là string (trường hợp server trả về lỗi dạng chuỗi)
+				logutil.CoreError("OTP response error string: %s", s)
+				return fmt.Errorf("OTP response error: %s", s)
+			} else {
+				logutil.CoreError("OTP response parse failed: %+v", resp.Data)
 			}
-			logutil.CoreError("OTP response parse failed: %+v", resp.Data)
 			return fmt.Errorf("no otp in response")
 		},
 		a.Conn,
@@ -101,33 +124,165 @@ func main() {
 					Payload: nil,
 				},
 			}
-			_ = a.Send(helloMsg)
-			resp, err := a.Receive()
-			if err != nil {
-				logutil.CoreError("Receive hello response error: %v", err)
-			} else {
-				// Nếu server báo chưa đăng ký thì xóa file config và đăng ký lại
-				if resp.Type == agent.TypeError {
-					if msg, ok := resp.Data.(string); ok && msg == "Agent not registered. Please register again." {
-						logutil.CoreInfo("Agent chưa đăng ký, xóa thông tin cũ và đăng ký lại...")
-						os.Remove(cfg.ConfigFile)
-						clientID, agentID, err := agent.RegisterAgent(a, cfg.ConfigFile)
-						if err != nil {
-							logutil.CoreError("register error: %v", err)
-							os.Exit(1)
-						}
-						clientInfo.ClientID = clientID
-						clientInfo.AgentID = agentID
-						fmt.Println("Đăng ký lại thành công, đã lưu client_id và agent_id!")
-					}
-				}
-			}
+			_, _ = a.Request(helloMsg, 10*time.Second)
 			<-ticker.C
 		}
 	}()
 
-	// Sau khi demo xong mới bắt đầu gửi log song song
-	go a.WatchLogAndSend(cfg.EventLog, cfg.Interval, clientInfo.AgentID)
+	// Gửi log: dùng agent chính, không tạo agent riêng, mọi log đều gửi qua a.Request
+	go func() {
+		logPath := cfg.EventLog
+		offsetPath := cfg.OffsetFile
+		if !isAbsPath(offsetPath) {
+			cwd, _ := os.Getwd()
+			offsetPath = cwd + string(os.PathSeparator) + offsetPath
+		}
+		var lastSize int64 = 0
+		if b, err := os.ReadFile(offsetPath); err == nil {
+			fmt.Sscanf(string(b), "%d", &lastSize)
+		}
+		for {
+			file, err := os.Open(logPath)
+			if err != nil {
+				logutil.CoreError("WatchLogAndSend: open log file error: %v", err)
+				time.Sleep(cfg.Interval)
+				continue
+			}
+			stat, err := file.Stat()
+			if err != nil {
+				file.Close()
+				logutil.CoreError("WatchLogAndSend: stat log file error: %v", err)
+				time.Sleep(cfg.Interval)
+				continue
+			}
+			if stat.Size() < lastSize {
+				lastSize = 0
+			}
+			if stat.Size() > lastSize {
+				file.Seek(lastSize, 0)
+				buf := make([]byte, stat.Size()-lastSize)
+				_, err := file.Read(buf)
+				if err == nil {
+					lines := splitLines(string(buf))
+					for _, line := range lines {
+						if line == "" {
+							continue
+						}
+						logMsg := agent.LogData{Message: line}
+						msgData := agent.AgentMessageData{AgentID: clientInfo.AgentID, Payload: logMsg}
+						msg := agent.Message{Type: agent.TypeLog, Data: msgData}
+						_, _ = a.Request(msg, 10*time.Second)
+					}
+				}
+				lastSize = stat.Size()
+				os.WriteFile(offsetPath, []byte(fmt.Sprintf("%d", lastSize)), 0644)
+			}
+			file.Close()
+			time.Sleep(cfg.Interval)
+		}
+	}()
 
 	select {}
+}
+
+type program struct{}
+
+func (p *program) Start(s service.Service) error {
+	go func() {
+		// Nếu chạy như service, gọi hàm mainLogic
+		mainLogic()
+	}()
+	return nil
+}
+
+func (p *program) Stop(s service.Service) error {
+	// Xử lý khi dừng service nếu cần
+	return nil
+}
+
+// Định nghĩa tên service chuẩn, không dấu, không khoảng trắng
+const serviceName = "GouPcClientSvc"
+const serviceDisplayName = "Gou PC Client Service"
+const serviceDescription = "Client agent for Gou PC running as a Windows service."
+
+func main() {
+	cfg := &service.Config{
+		Name:        serviceName,
+		DisplayName: serviceDisplayName,
+		Description: serviceDescription,
+	}
+	prg := &program{}
+	s, err := service.New(prg, cfg)
+	if err != nil {
+		fmt.Println("Create service failed:", err)
+		return
+	}
+
+	if len(os.Args) > 1 {
+		switch os.Args[1] {
+		case "install-service":
+			err = s.Install()
+			if err != nil {
+				fmt.Println("Install service failed:", err)
+				fmt.Println("Nếu lỗi quyền, hãy chạy terminal với quyền Administrator!")
+			} else {
+				// Kiểm tra lại service có thực sự tồn tại sau khi cài
+				fmt.Println("Service installed, kiểm tra lại danh sách service...")
+				output, scErr := execCommand("sc", "query", serviceName)
+				if scErr != nil || !serviceExistsInSC(output, serviceName) {
+					fmt.Println("CẢNH BÁO: Service KHÔNG đăng ký thành công! Có thể bạn chưa chạy terminal với quyền Administrator hoặc bị chặn bởi Defender!")
+					fmt.Printf("Chi tiết lỗi sc: %v\nOutput: %s\n", scErr, output)
+				} else {
+					fmt.Println("Service installed successfully và đã xuất hiện trong danh sách service!")
+				}
+			}
+			return
+		case "uninstall-service":
+			err = s.Uninstall()
+			if err != nil {
+				fmt.Println("Uninstall service failed:", err)
+				fmt.Println("Nếu lỗi quyền, hãy chạy terminal với quyền Administrator!")
+			} else {
+				fmt.Println("Service uninstalled successfully!")
+			}
+			return
+		}
+	}
+
+	// Nếu không phải lệnh service thì chạy service logic
+	err = s.Run()
+	if err != nil {
+		fmt.Println("Run service failed:", err)
+	}
+}
+
+func execCommand(name string, arg ...string) (string, error) {
+	cmd := exec.Command(name, arg...)
+	output, err := cmd.CombinedOutput()
+	return string(output), err
+}
+
+func serviceExistsInSC(output, serviceName string) bool {
+	return strings.Contains(output, serviceName)
+}
+
+// Hàm tiện ích: kiểm tra đường dẫn tuyệt đối
+func isAbsPath(path string) bool {
+	return len(path) > 1 && (path[1] == ':' || path[0] == '/' || path[0] == '\\')
+}
+
+// Hàm tiện ích: tách dòng
+func splitLines(s string) []string {
+	var lines []string
+	start := 0
+	for i, c := range s {
+		if c == '\n' {
+			lines = append(lines, s[start:i])
+			start = i + 1
+		}
+	}
+	if start < len(s) {
+		lines = append(lines, s[start:])
+	}
+	return lines
 }
