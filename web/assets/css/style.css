@@ -1,6 +1,6 @@
 /* CSS chung cho toàn bộ hệ thống */
 body {
-    font-family: Arial, sans-serif;
+    font-family: 'Inter', Arial, sans-serif;
     background: #f3f3f3;
     margin: 0;
     padding: 0;
@@ -24,18 +24,72 @@ body {
     padding: 0;
 }
 .sidebar ul li {
-    margin-bottom: 10px;
+    margin-bottom: 18px; /* tăng khoảng cách giữa các button */
 }
 .sidebar ul li a {
-    display: block;
+    display: flex;
+    align-items: center;
+    gap: 12px;
     color: #fff;
     text-decoration: none;
-    padding: 10px 20px;
-    border-radius: 6px 0 0 6px;
-    transition: background 0.2s;
+    padding: 16px 28px;
+    border-radius: 12px;
+    font-size: 18px;
+    font-weight: 500;
+    background: #232b3e;
+    box-shadow: 0 2px 8px rgba(44,62,80,0.08);
+    margin: 0 16px 14px 16px;
+    position: relative;
+    overflow: hidden;
+    transition: box-shadow 0.22s, transform 0.18s;
+}
+.sidebar ul li a::before {
+    content: '';
+    position: absolute;
+    left: 0; right: 0; top: 0; bottom: 0;
+    width: 100%; height: 100%;
+    background: linear-gradient(90deg, #4216b1 0%, #9438e4 100%);
+    border-radius: 12px;
+    z-index: 0;
+    opacity: 0.85;
+    mix-blend-mode: lighten;
+    clip-path: inset(0 100% 0 0 round 12px);
+    transition: clip-path 0.35s cubic-bezier(.4,0.8,.6,1), opacity 0.22s;
+    pointer-events: none;
+}
+.sidebar ul li a span, .sidebar ul li a .sidebar-icon {
+    position: relative;
+    z-index: 2;
+    color: #fff !important;
+    font-weight: 700;
+    text-shadow: 0 2px 12px #2d0c4a, 0 1px 8px rgba(50,0,80,0.25), 0 0 2px #000;
+    transition: color 0.2s;
+}
+.sidebar ul li a.active::before, .sidebar ul li a:hover::before {
+    clip-path: inset(0 0 0 0 round 12px);
+    opacity: 1;
+}
+.sidebar ul li a .sidebar-icon {
+    display: inline-flex;
+    align-items: center;
+    font-size: 20px;
+    margin-right: 0;
+    color: #b6b8d6;
+    transition: color 0.2s;
+    z-index: 1;
+}
+.sidebar ul li a.active .sidebar-icon, .sidebar ul li a:hover .sidebar-icon {
+    color: #fff;
 }
 .sidebar ul li a.active, .sidebar ul li a:hover {
-    background: linear-gradient(90deg, #6a5af9 60%, #7b6cf6 100%);
+    color: #fff;
+    font-weight: 600;
+    box-shadow: 0 4px 16px rgba(106,90,249,0.13);
+    transform: scale(1.04);
+}
+.sidebar ul li a:active {
+    filter: brightness(0.96);
+    transform: scale(0.98);
 }
 .main {
     margin-left: 240px;
@@ -129,7 +183,7 @@ body {
     border: 1.5px solid #bbb;
     font-size: 15px;
     background: #f7f7ff;
-    color: #232b3e;
+    /* */
     box-shadow: 0 2px 8px rgba(106,90,249,0.06);
     outline: none;
     transition: border 0.2s;
@@ -151,7 +205,7 @@ body {
     position: sticky;
     top: 0;
     z-index: 2;
-    background: #6a5af9;
+    background: linear-gradient(180deg, #3609a9 0%, #7010c3 100%);
 }
 .log-table {
     width: 100%;
@@ -164,21 +218,24 @@ body {
     text-align: left;
 }
 .log-table th {
+    text-align: center !important;
     background: #6a5af9;
     color: #fff;
+    font-family: 'Inter', Arial, sans-serif;
+    font-size: 16px;
     font-weight: 600;
-    font-size: 15px;
     border-top-left-radius: 10px;
     border-top-right-radius: 10px;
 }
 .log-table tr {
     transition: background 0.15s;
+    background: #fff;
 }
 .log-table tr:hover {
-    background: #f3f6ff;
+    background: #f3f6ff !important;
 }
 .log-table tr:nth-child(even) {
-    background: #f6f6fa;
+    background: #f6f6fa !important;
 }
 .log-table .info {
     background: #e0e7ff;
@@ -328,10 +385,13 @@ body {
     text-align: left;
 }
 .device-table th {
-    background: #6a5af9;
+    text-align: center !important;
+    /* background: #6a5af9; */
+    background: linear-gradient(180deg, #3609a9 0%, #7d2cc4 100%);
     color: #fff;
+    font-family: 'Inter', Arial, sans-serif;
+    font-size: 16px;
     font-weight: 600;
-    font-size: 15px;
     border-top-left-radius: 10px;
     border-top-right-radius: 10px;
     position: sticky;
@@ -340,12 +400,13 @@ body {
 }
 .device-table tr {
     transition: background 0.15s;
+    background: #fff;
 }
 .device-table tr:hover {
     background: #f3f6ff;
 }
 .device-table tr:nth-child(even) {
-    background: #f6f6fa;
+    background: #f6f6fa !important;
 }
 .device-status {
     display: inline-block;
@@ -408,17 +469,37 @@ body {
     background: #c0392b;
 }
 .assign-user {
-    border-radius: 6px;
-    padding: 6px 10px;
-    font-size: 14px;
+    border-radius: 8px;
+    padding: 10px 16px;
+    font-size: 16px; /* đồng bộ cỡ chữ với bảng */
+    font-family: 'Inter', Arial, sans-serif;
+    font-weight: 500;
     border: 1.5px solid #bbb;
     background: #f7f7ff;
-    color: #232b3e;
+    /* */
     outline: none;
-    transition: border 0.2s;
+    transition: border 0.2s, box-shadow 0.2s;
+    box-shadow: 0 2px 8px rgba(106,90,249,0.06);
+    appearance: none;
+    min-width: 140px;
+    cursor: pointer;
 }
 .assign-user:focus {
     border: 1.5px solid #6a5af9;
+    box-shadow: 0 0 0 2px rgba(106,90,249,0.10);
+}
+.assign-user option {
+    font-size: 16px;
+    font-family: 'Inter', Arial, sans-serif;
+    /* */
+    background: #fff;
+}
+/* Custom arrow for select */
+.assign-user {
+    background-image: url('data:image/svg+xml;utf8,<svg fill="%236a5af9" height="20" viewBox="0 0 20 20" width="20" xmlns="http://www.w3.org/2000/svg"><path d="M7.293 7.293a1 1 0 011.414 0L10 8.586l1.293-1.293a1 1 0 111.414 1.414l-2 2a1 1 0 01-1.414 0l-2-2a1 1 0 010-1.414z"/></svg>');
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-size: 20px 20px;
 }
 .custom-toast {
     position: fixed;
@@ -449,33 +530,588 @@ body {
     background: #1ecb4f;
     color: #fff;
 }
-@media (max-width: 900px) {
-    .main { padding: 20px 5vw 20px 5vw; }
-    .header { padding: 18px 5vw 18px 230px; }
-    .device-table-container, .log-table-container {
-        padding: 8px 2px 8px 2px;
-        overflow-x: auto;
-    }
-    .device-table, .log-table {
-        min-width: 700px;
+.otp-modal {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(44, 62, 80, 0.25);
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.otp-modal-content {
+    background: #fff;
+    border-radius: 14px;
+    box-shadow: 0 4px 24px rgba(44,62,80,0.18);
+    padding: 36px 38px 28px 38px;
+    min-width: 320px;
+    text-align: center;
+    position: relative;
+    animation: otpPop .25s cubic-bezier(.4,2,.6,1) 1;
+}
+@keyframes otpPop {
+    0% { transform: scale(0.7); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+}
+.otp-title {
+    font-size: 20px;
+    font-weight: 700;
+    margin-bottom: 18px;
+    /* */
+}
+.otp-code {
+    font-size: 38px;
+    font-weight: bold;
+    letter-spacing: 6px;
+    color: #6a5af9;
+    margin-bottom: 12px;
+}
+.otp-expire {
+    font-size: 15px;
+    color: #888;
+    margin-bottom: 18px;
+}
+.otp-close {
+    background: linear-gradient(90deg, #6a5af9 60%, #7b6cf6 100%);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 8px 28px;
+    font-weight: bold;
+    font-size: 15px;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(106,90,249,0.08);
+    transition: background 0.2s;
+}
+.otp-close:hover {
+    background: linear-gradient(90deg, #7b6cf6 60%, #6a5af9 100%);
+}
+.delete-modal {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(44, 62, 80, 0.18);
+    z-index: 10001;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.delete-modal-content {
+    background: #fff;
+    border-radius: 14px;
+    box-shadow: 0 4px 24px rgba(44,62,80,0.18);
+    padding: 32px 36px 24px 36px;
+    min-width: 320px;
+    text-align: center;
+    position: relative;
+    animation: otpPop .25s cubic-bezier(.4,2,.6,1) 1;
+}
+.delete-title {
+    font-size: 20px;
+    font-weight: 700;
+    margin-bottom: 14px;
+    color: #e74c3c;
+}
+.delete-desc {
+    font-size: 16px;
+    /* */
+    margin-bottom: 22px;
+}
+.delete-actions {
+    display: flex;
+    justify-content: center;
+    gap: 18px;
+}
+.delete-cancel {
+    background: #ececff;
+    /* */
+    border: none;
+    border-radius: 8px;
+    padding: 8px 28px;
+    font-weight: bold;
+    font-size: 15px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+.delete-cancel:hover {
+    background: #e0e7ff;
+}
+.delete-confirm {
+    background: #e74c3c;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 8px 28px;
+    font-weight: bold;
+    font-size: 15px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+.delete-confirm:hover {
+    background: #c0392b;
+}
+/* User Table (Admin) */
+.user-table-wrap {
+    background: #fff;
+    border-radius: 14px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+    padding: 18px 18px 10px 18px;
+    margin-top: 18px;
+    max-height: 320px;
+    overflow-y: auto;
+    overflow-x: auto;
+    position: relative;
+}
+.user-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: 15px;
+    min-width: 700px;
+}
+.user-table th, .user-table td {
+    padding: 13px 10px;
+    text-align: left;
+}
+.user-table th {
+    text-align: center !important;
+    /* background: #6a5af9; */
+    background: linear-gradient(180deg, #3609a9 0%, #7010c3 100%);
+    color: #fff;
+    font-family: 'Inter', Arial, sans-serif;
+    font-size: 16px;
+    font-weight: 600;
+    position: sticky;
+    top: 0;
+    z-index: 2;
+}
+.user-table tr {
+    transition: background 0.15s;
+    background: #fff;
+}
+.user-table tr:hover {
+    background: #f3f6ff;
+}
+.user-table tr:nth-child(even) {
+    background: #f6f6fa !important;
+}
+.user-table td:last-child {
+    text-align: center;
+}
+.user-table button {
+    background: #ececff;
+    /* */
+    border: none;
+    border-radius: 8px;
+    padding: 6px 16px;
+    font-weight: bold;
+    font-size: 14px;
+    margin-right: 6px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+.user-table button:disabled {
+    background: #e0e7ff;
+    color: #aaa;
+    cursor: not-allowed;
+}
+.user-table .btn-edit {
+    background: #309118;
+    color: #fff;
+}
+.user-table .btn-edit:hover:not(:disabled) {
+    background: #084501;
+}
+.user-table .btn-password {
+    background: #2e45f9;
+    color: #fff;
+}
+.user-table .btn-password:hover:not(:disabled) {
+    background: #1105b9;
+}
+.user-table .btn-delete-user {
+    background: #e74c3c;
+    color: #fff;
+}
+.user-table .btn-delete-user:hover:not(:disabled) {
+    background: #c0392b;
+}
+/* Modal chỉnh sửa user (Admin) */
+.edit-user-modal {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(44, 62, 80, 0.18);
+    z-index: 10001;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.edit-user-modal-content {
+    background: #fff;
+    border-radius: 14px;
+    box-shadow: 0 4px 24px rgba(44,62,80,0.18);
+    padding: 32px 36px 24px 36px;
+    min-width: 340px;
+    text-align: left;
+    position: relative;
+    animation: otpPop .25s cubic-bezier(.4,2,.6,1) 1;
+}
+.edit-title {
+    font-size: 20px;
+    font-weight: 700;
+    margin-bottom: 18px;
+    color: #6a5af9;
+    text-align: center;
+}
+.edit-form label {
+    font-size: 14px;
+    font-weight: 500;
+    margin-bottom: 4px;
+    display: block;
+    /* */
+}
+.edit-form input, .edit-form select {
+    width: 100%;
+    margin-bottom: 14px;
+    padding: 10px;
+    border-radius: 6px;
+    border: 1.5px solid #bbb;
+    font-size: 15px;
+    background: #f7f7ff;
+    /* */
+    transition: border 0.2s;
+}
+.edit-form input:focus, .edit-form select:focus {
+    border: 1.5px solid #6a5af9;
+    outline: none;
+}
+.edit-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 14px;
+    margin-top: 10px;
+}
+.edit-cancel {
+    background: #ececff;
+    /* */
+    border: none;
+    border-radius: 8px;
+    padding: 8px 28px;
+    font-weight: bold;
+    font-size: 15px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+.edit-cancel:hover {
+    background: #e0e7ff;
+}
+.edit-save {
+    background: #6a5af9;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 8px 28px;
+    font-weight: bold;
+    font-size: 15px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+.edit-save:hover {
+    background: #7b6cf6;
+}
+/* Modal đổi mật khẩu user (Admin) */
+.change-password-modal {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(44, 62, 80, 0.18);
+    z-index: 10001;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.change-password-modal-content {
+    background: #fff;
+    border-radius: 14px;
+    box-shadow: 0 4px 24px rgba(44,62,80,0.18);
+    padding: 32px 36px 24px 36px;
+    min-width: 340px;
+    text-align: left;
+    position: relative;
+    animation: otpPop .25s cubic-bezier(.4,2,.6,1) 1;
+}
+.change-title {
+    font-size: 20px;
+    font-weight: 700;
+    margin-bottom: 18px;
+    color: #f7b731;
+    text-align: center;
+}
+.change-form label {
+    font-size: 14px;
+    font-weight: 500;
+    margin-bottom: 4px;
+    display: block;
+    /* */
+}
+.change-form input {
+    width: 100%;
+    margin-bottom: 14px;
+    padding: 10px;
+    border-radius: 6px;
+    border: 1.5px solid #bbb;
+    font-size: 15px;
+    background: #f7f7ff;
+    /* */
+    transition: border 0.2s;
+}
+.change-form input:focus {
+    border: 1.5px solid #f7b731;
+    outline: none;
+}
+.change-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 14px;
+    margin-top: 10px;
+}
+.change-cancel {
+    background: #ececff;
+    /* */
+    border: none;
+    border-radius: 8px;
+    padding: 8px 28px;
+    font-weight: bold;
+    font-size: 15px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+.change-cancel:hover {
+    background: #e0e7ff;
+}
+.change-save {
+    background: #f7b731;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 8px 28px;
+    font-weight: bold;
+    font-size: 15px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+.change-save:hover {
+    background: #f5a623;
+}
+/* Bo tròn góc ngoài cùng cho bảng (user-table, device-table, log-table) */
+.device-table th,
+.log-table th {
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
+}
+.device-table th:first-child {
+    border-top-left-radius: 10px !important;
+}
+.device-table th:last-child {
+    border-top-right-radius: 10px !important;
+}
+.log-table th:first-child {
+    border-top-left-radius: 10px !important;
+}
+.log-table th:last-child {
+    border-top-right-radius: 10px !important;
+}
+.user-table th:first-child {
+    border-top-left-radius: 10px !important;
+}
+.user-table th:last-child {
+    border-top-right-radius: 10px !important;
+}
+/* Xóa bo tròn các góc còn lại nếu có */
+.user-table th:not(:first-child):not(:last-child),
+.device-table th:not(:first-child):not(:last-child),
+.log-table th:not(:first-child):not(:last-child) {
+    border-radius: 0 !important;
+}
+/* Làm rõ từng cột bảng, căn chỉnh nội dung từng cột cho user-table, device-table, log-table */
+.user-table th, .user-table td,
+.device-table th, .device-table td,
+.log-table th, .log-table td {
+    border-right: 1px solid #ececff;
+    background-clip: padding-box;
+    font-family: 'Inter', Arial, sans-serif;
+    font-size: 16px; /* tăng size chữ lên 1 size */
+    font-weight: 500; /* đồng bộ font-weight */
+}
+.user-table th:last-child, .user-table td:last-child,
+.device-table th:last-child, .device-table td:last-child,
+.log-table th:last-child, .log-table td:last-child {
+    border-right: none;
+}
+.user-table td, .device-table td, .log-table td {
+    vertical-align: middle;
+    background: #fff;
+    text-align: center;
+    font-family: 'Inter', Arial, sans-serif;
+    font-size: 16px;
+    font-weight: 400; /* giảm độ đậm xuống bình thường */
+}
+.user-table td:first-child, .device-table td:first-child, .log-table td:first-child {
+    font-weight: 400; /* giảm độ đậm xuống bình thường */
+    font-family: 'Inter', Arial, sans-serif;
+    font-size: 16px;
+}
+.user-table tr, .device-table tr, .log-table tr {
+    font-family: 'Inter', Arial, sans-serif;
+    font-size: 16px;
+    font-weight: 400;
+    transition: background 0.15s;
+    background: #fff;
+}
+.user-table tr:nth-child(even), .device-table tr:nth-child(even), .log-table tr:nth-child(even) {
+    background: #2626a0 !important;
+}
+.user-table tr:hover, .device-table tr:hover, .log-table tr:hover {
+    background: #1b41b2 !important;
+}
+/* Kẻ ngang nhỏ giữa các hàng cho bảng user, device, log - LÀM RÕ HƠN */
+.user-table tbody tr:not(:last-child),
+.device-table tbody tr:not(:last-child),
+.log-table tbody tr:not(:last-child) {
+    border-bottom: 2px solid #6a5af9 !important;
+}
+.user-table tr:last-child, .device-table tr:last-child, .log-table tr:last-child {
+    border-bottom: none !important;
+}
+/* Đảm bảo border không bị che bởi màu nền hàng chẵn/lẻ/hover */
+.user-table tr, .device-table tr, .log-table tr {
+    background-clip: padding-box;
+}
+.user-table tr:nth-child(even), .device-table tr:nth-child(even), .log-table tr:nth-child(even) {
+    background: #f6f6fa !important;
+}
+.user-table tr:hover, .device-table tr:hover, .log-table tr:hover {
+    background: #e8eaff !important;
+}
+/* --- FIX TRIỆT ĐỂ BORDER-BOTTOM KẺ NGANG NHỎ --- */
+.user-table, .device-table, .log-table {
+    border-collapse: separate !important;
+    border-spacing: 0;
+}
+.user-table td, .device-table td, .log-table td {
+    border-bottom: 2px solid #e2e0f8 !important;
+    background-clip: padding-box;
+}
+.user-table tr:last-child td, .device-table tr:last-child td, .log-table tr:last-child td {
+    border-bottom: none !important;
+}
+/* Loại bỏ border-bottom ở tr nếu có */
+.user-table tr, .device-table tr, .log-table tr {
+    border-bottom: none !important;
+    background: transparent !important;
+}
+/* Giữ lại màu nền cho td (hàng chẵn/lẻ/hover) */
+.user-table tr:nth-child(even) td, .device-table tr:nth-child(even) td, .log-table tr:nth-child(even) td {
+    background: #f7f6fc !important;
+}
+.user-table tr:hover td, .device-table tr:hover td, .log-table tr:hover td {
+    background: #e3e3ff !important;
+}
+/* Đảm bảo border-right vẫn rõ ràng */
+.user-table td, .device-table td, .log-table td {
+    border-right: 1px solid #ececff;
+}
+.user-table td:last-child, .device-table td:last-child, .log-table td:last-child {
+    border-right: none;
+}
+/* Giảm kích thước modal tạo/sửa user cho hợp lý */
+.edit-user-modal-content, .add-user-modal .edit-user-modal-content {
+    min-width: 320px;
+    max-width: 420px;
+    width: 100%;
+    padding: 32px 24px 24px 24px;
+    box-sizing: border-box;
+    margin: 0 auto;
+    background: #fff;
+    border-radius: 14px;
+    box-shadow: 0 4px 24px rgba(44,62,80,0.18);
+    position: relative;
+    animation: otpPop .25s cubic-bezier(.4,2,.6,1) 1;
+}
+@media (max-width: 500px) {
+    .edit-user-modal-content, .add-user-modal .edit-user-modal-content {
+        min-width: 0;
+        max-width: 98vw;
+        width: 98vw;
+        padding: 16px 2vw 16px 2vw;
     }
 }
-@media (max-width: 700px) {
-    .log-filter {
-        position: static;
-        display: block;
-        margin: 10px 0 18px 0;
+/* Style cho modal xác nhận xóa user (delete-user-modal-content) đồng bộ với modal user */
+.delete-user-modal-content {
+    min-width: 260px;
+    max-width: 360px;
+    width: 100%;
+    padding: 28px 20px 20px 20px;
+    box-sizing: border-box;
+    margin: 0 auto;
+    background: #fff;
+    border-radius: 14px;
+    box-shadow: 0 4px 24px rgba(44,62,80,0.18);
+    position: relative;
+    text-align: center;
+    animation: otpPop .25s cubic-bezier(.4,2,.6,1) 1;
+}
+@media (max-width: 500px) {
+    .delete-user-modal-content {
+        min-width: 0;
+        max-width: 96vw;
+        width: 96vw;
+        padding: 12px 2vw 12px 2vw;
+    }
+}
+.device-table td:last-child {
+    text-align: center !important;
+    vertical-align: middle !important;
+    padding-top: 0;
+    padding-bottom: 0;
+}
+.device-actions {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    margin: 0 auto;
+    box-sizing: border-box;
+    padding: 8px 0; /* Thêm padding để không bị dính sát trên/dưới */
+    min-height: 44px;
+}
+.device-actions button,
+.device-actions .btn-otp,
+.device-actions .btn-delete {
+    margin: 0 !important;
+    min-width: 90px;
+    box-sizing: border-box;
+    text-align: center;
+    width: auto;
+}
+.btn-otp, .btn-delete {
+    margin-right: 0 !important;
+}
+@media (max-width: 600px) {
+    .device-actions {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
         width: 100%;
+        justify-content: center;
+        padding: 6px 0;
     }
-    .device-table-container, .log-table-container {
-        padding: 4px 0 4px 0;
-        overflow-x: auto;
-    }
-    .device-table, .log-table {
-        min-width: 900px;
-    }
-    /* Ẩn bớt cột phụ trên mobile */
-    .device-table th.hide-mobile, .device-table td.hide-mobile {
-        display: none;
+    .device-actions button,
+    .device-actions .btn-otp,
+    .device-actions .btn-delete {
+        width: 100%;
+        min-width: 0;
+        margin: 0 !important;
+        box-sizing: border-box;
     }
 }

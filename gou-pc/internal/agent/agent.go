@@ -8,6 +8,7 @@ import (
 	"io"
 	"net"
 	"os"
+	"sync"
 	"time"
 
 	"gou-pc/internal/logutil"
@@ -28,8 +29,21 @@ type Message struct {
 	Data interface{} `json:"data,omitempty"`
 }
 
+type AgentRequest struct {
+	Msg      Message
+	RespChan chan AgentResponse
+	Timeout  time.Duration
+}
+
+type AgentResponse struct {
+	Msg Message
+	Err error
+}
+
 type Agent struct {
-	Conn net.Conn
+	Conn        net.Conn
+	ConnMu      sync.Mutex
+	requestChan chan AgentRequest
 }
 
 type DeviceInfo struct {
@@ -58,10 +72,78 @@ func (a *Agent) Connect(addr string, timeout time.Duration) error {
 		return err
 	}
 	a.Conn = conn
+	a.requestChan = make(chan AgentRequest)
+	go a.StartRequestLoop()
 	return nil
 }
 
+func (a *Agent) StartRequestLoop() {
+	for req := range a.requestChan {
+		// Gửi request
+		jsonMsg, err := json.Marshal(req.Msg)
+		if err != nil {
+			req.RespChan <- AgentResponse{Err: err}
+			continue
+		}
+		encryptedMsg, err := crypto.Encrypt(string(jsonMsg))
+		if err != nil {
+			req.RespChan <- AgentResponse{Err: err}
+			continue
+		}
+		lenBytes := make([]byte, 4)
+		binary.BigEndian.PutUint32(lenBytes, uint32(len(encryptedMsg)))
+		if _, err := a.Conn.Write(lenBytes); err != nil {
+			req.RespChan <- AgentResponse{Err: err}
+			continue
+		}
+		_, err = a.Conn.Write([]byte(encryptedMsg))
+		if err != nil {
+			req.RespChan <- AgentResponse{Err: err}
+			continue
+		}
+		// Nhận response
+		var msg Message
+		lenBuf := make([]byte, 4)
+		if _, err := io.ReadFull(a.Conn, lenBuf); err != nil {
+			req.RespChan <- AgentResponse{Err: err}
+			continue
+		}
+		length := binary.BigEndian.Uint32(lenBuf)
+		buf := make([]byte, length)
+		if _, err := io.ReadFull(a.Conn, buf); err != nil {
+			req.RespChan <- AgentResponse{Err: err}
+			continue
+		}
+		decryptedResp, err := crypto.Decrypt(string(buf))
+		if err != nil {
+			req.RespChan <- AgentResponse{Err: err}
+			continue
+		}
+		if err := json.Unmarshal([]byte(decryptedResp), &msg); err != nil {
+			req.RespChan <- AgentResponse{Err: err}
+			continue
+		}
+		logutil.CoreInfo("RequestLoop: Received: {type:%s, agent_id:%s, data:%v}", msg.Type, getAgentIDFromMsg(msg), msg.Data)
+		req.RespChan <- AgentResponse{Msg: msg, Err: nil}
+	}
+}
+
+func (a *Agent) Request(msg Message, timeout time.Duration) (Message, error) {
+	respChan := make(chan AgentResponse, 1)
+	a.requestChan <- AgentRequest{Msg: msg, RespChan: respChan, Timeout: timeout}
+	select {
+	case resp := <-respChan:
+		return resp.Msg, resp.Err
+	case <-time.After(timeout):
+		return Message{}, fmt.Errorf("request timeout")
+	}
+}
+
+// Deprecated: Không nên dùng trực tiếp, hãy dùng Agent.Request để đảm bảo tuần tự và đúng response.
 func (a *Agent) Send(msg Message) error {
+	a.ConnMu.Lock()
+	defer a.ConnMu.Unlock()
+
 	jsonMsg, err := json.Marshal(msg)
 	if err != nil {
 		logutil.CoreError("Send: JSON marshal failed: %v", err)
@@ -86,7 +168,11 @@ func (a *Agent) Send(msg Message) error {
 	return err
 }
 
+// Deprecated: Không nên dùng trực tiếp, hãy dùng Agent.Request để đảm bảo tuần tự và đúng response.
 func (a *Agent) Receive() (Message, error) {
+	a.ConnMu.Lock()
+	defer a.ConnMu.Unlock()
+
 	var msg Message
 	lenBuf := make([]byte, 4)
 	if _, err := io.ReadFull(a.Conn, lenBuf); err != nil {
@@ -110,7 +196,10 @@ func (a *Agent) Receive() (Message, error) {
 
 func (a *Agent) Close() error {
 	if a.Conn != nil {
-		return a.Conn.Close()
+		a.Conn.Close()
+	}
+	if a.requestChan != nil {
+		close(a.requestChan)
 	}
 	return nil
 }
@@ -158,13 +247,9 @@ func RegisterAgent(a *Agent, configPath string) (clientID, agentID string, err e
 	dev, _ := GetDeviceInfo()
 	logutil.CoreInfo("RegisterAgent: Registering device info: %+v", dev)
 	msg := Message{Type: TypeRegister, Data: dev}
-	if err := a.Send(msg); err != nil {
-		logutil.CoreError("RegisterAgent: Send register message failed: %v", err)
-		return "", "", err
-	}
-	resp, err := a.Receive()
+	resp, err := a.Request(msg, 10*time.Second)
 	if err != nil {
-		logutil.CoreError("RegisterAgent: Receive response failed: %v", err)
+		logutil.CoreError("RegisterAgent: Request failed: %v", err)
 		return "", "", err
 	}
 	logutil.CoreInfo("RegisterAgent: Received response type=%s data=%v", resp.Type, resp.Data)

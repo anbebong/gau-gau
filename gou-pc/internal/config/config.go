@@ -14,10 +14,12 @@ type ClientConfig struct {
 
 func DefaultClientConfig() *ClientConfig {
 	return &ClientConfig{
-		LogFile:    "etc/client.log",
-		EventLog:   "etc/event.log",
-		OffsetFile: "etc/event.log.offset",
-		ConfigFile: "etc/client.json",
+		// LogFile:  "etc/client.log",
+		LogFile:  "C:\\Users\\an\\Desktop\\backup\\client.log",
+		EventLog: "C:\\credential_provider_log.txt",
+		// EventLog:   "etc/event.log",
+		OffsetFile: "C:\\Users\\an\\Desktop\\backup\\event.log.offset",
+		ConfigFile: "C:\\Users\\an\\Desktop\\backup\\client_config.json",
 		ServerAddr: "192.168.15.12:9000",
 		Interval:   2 * time.Second,
 	}
