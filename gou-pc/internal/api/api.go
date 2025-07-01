@@ -56,6 +56,7 @@ func Start(port string, userService service.UserService, clientService service.C
 		// Log routes
 		api.GET("/logs/archive", middleware.JWTAuthMiddleware(handler.GetArchiveLogHandler, true)) // admin only
 		api.GET("/logs/my-device", handler.GetMyDeviceLogHandler)
+		api.GET("/logs/paged", middleware.JWTAuthMiddleware(handler.GetLogsPagedHandler, true)) // admin only
 	}
 
 	logutil.APIInfo("API server (Gin) starting on port %s...", port)

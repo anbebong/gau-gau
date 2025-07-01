@@ -98,4 +98,4 @@ go build -o gou-pc-server ./cmd/server
 - Xem chi tiết trong code hoặc file test mẫu.
 
 ---
-Dự án này phục vụ mục đích học tập, thực hành Golang và clean architecture. Mọi góp ý, thắc mắc vui lòng liên hệ tác giả.
+Dự án này phục vụ mục đích học tập, thực hành Golang và clean architecture. Mọi góp ý, thắc mắc vui lòng liên hệ .

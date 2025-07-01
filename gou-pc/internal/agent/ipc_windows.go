@@ -4,6 +4,7 @@
 package agent
 
 import (
+	"gou-pc/internal/logutil"
 	"io"
 	"log"
 	"net"
@@ -28,6 +29,7 @@ func StartIPCListener(requestOTP func(chan<- string) error, serverConn net.Conn)
 	}
 	ipcListener, err := winio.ListenPipe(pipePath, config)
 	if err != nil {
+		logutil.CoreError("Không thể lắng nghe trên named pipe: %v", err)
 		log.Printf("Không thể lắng nghe trên named pipe: %v", err)
 		return
 	}
@@ -40,6 +42,7 @@ func StartIPCListener(requestOTP func(chan<- string) error, serverConn net.Conn)
 				log.Println("Trình nghe IPC đã dừng.")
 				return
 			}
+			logutil.CoreError("Không thể chấp nhận kết nối IPC: %v", err)
 			log.Printf("Không thể chấp nhận kết nối IPC: %v", err)
 			continue
 		}
@@ -69,6 +72,7 @@ func handleIPCConnection(conn net.Conn, requestOTP func() error, otpResponseChan
 			return
 		}
 		if err := requestOTP(); err != nil {
+			logutil.CoreError("Lỗi khi gửi yêu cầu OTP đến server: %v", err)
 			log.Printf("Lỗi khi gửi yêu cầu OTP đến server: %v", err)
 			conn.Write([]byte("ERROR: Failed to request OTP from server"))
 			return
