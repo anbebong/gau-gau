@@ -5,6 +5,7 @@ import (
 	"gou-pc/internal/api/service"
 	"gou-pc/internal/logutil"
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
@@ -75,4 +76,31 @@ func GetMyDeviceLogHandler(c *gin.Context) {
 	}
 	logutil.APIDebug("GetMyDeviceLogHandler: total logs returned: %d", len(allLogs))
 	response.Success(c, allLogs)
+}
+
+func GetLogsPagedHandler(c *gin.Context) {
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	pageSize, _ := strconv.Atoi(c.DefaultQuery("pageSize", "10"))
+	agentID := c.Query("agent")
+	if agentID != "" {
+		logs, total, err := logService.GetLogsPagedByAgentID(agentID, page, pageSize)
+		if err != nil {
+			response.Error(c, http.StatusInternalServerError, err.Error())
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{
+			"logs":  logs,
+			"total": total,
+		})
+		return
+	}
+	logs, total, err := logService.GetLogsPaged(page, pageSize)
+	if err != nil {
+		response.Error(c, http.StatusInternalServerError, err.Error())
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"logs":  logs,
+		"total": total,
+	})
 }

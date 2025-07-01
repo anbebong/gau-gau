@@ -1,6 +1,7 @@
 package service
 
 import (
+	"gou-pc/internal/api/repository"
 	"gou-pc/internal/logcollector"
 )
 
@@ -10,6 +11,8 @@ import (
 type LogService interface {
 	GetAllLogs() ([]logcollector.ArchiveLogEntry, error)
 	GetLogsByAgentID(agentID string) ([]logcollector.ArchiveLogEntry, error)
+	GetLogsPaged(page, pageSize int) ([]logcollector.ArchiveLogEntry, int, error)
+	GetLogsPagedByAgentID(agentID string, page, pageSize int) ([]logcollector.ArchiveLogEntry, int, error)
 }
 
 type logServiceImpl struct {
@@ -36,4 +39,14 @@ func (s *logServiceImpl) GetLogsByAgentID(agentID string) ([]logcollector.Archiv
 		}
 	}
 	return result, nil
+}
+
+func (s *logServiceImpl) GetLogsPaged(page, pageSize int) ([]logcollector.ArchiveLogEntry, int, error) {
+	repo := repository.NewFileLogRepository(s.archiveFile)
+	return repo.GetLogsPaged(page, pageSize)
+}
+
+func (s *logServiceImpl) GetLogsPagedByAgentID(agentID string, page, pageSize int) ([]logcollector.ArchiveLogEntry, int, error) {
+	repo := repository.NewFileLogRepository(s.archiveFile)
+	return repo.GetLogsPagedByAgentID(agentID, page, pageSize)
 }

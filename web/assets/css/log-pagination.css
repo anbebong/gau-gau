@@ -1,0 +1,25 @@
+/* CSS cho phân trang log */
+.log-pagination {
+    margin-top: 12px;
+    text-align: center;
+}
+.log-page-btn {
+    background: #f7f7ff;
+    border: 1px solid #bbb;
+    color: #4216b1;
+    padding: 4px 10px;
+    margin: 0 2px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: background 0.15s;
+}
+.log-page-btn.active, .log-page-btn:hover:not(:disabled) {
+    background: linear-gradient(90deg, #4216b1 0%, #9438e4 100%);
+    color: #fff;
+    border-color: #4216b1;
+}
+.log-page-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}

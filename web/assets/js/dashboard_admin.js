@@ -75,33 +75,37 @@ function setupLogout() {
         });
     }
 }
-async function loadLogs(agent = '') {
-    let url = 'logs/archive';
-    if (agent) url += `?agent=${encodeURIComponent(agent)}`;
+// ========== LOGS WITH PAGINATION ========== //
+let currentLogPage = 1;
+let logPageSize = 5;
+let logTotal = 0;
+let currentLogAgent = '';
+
+async function loadLogsPaged(page = 1, pageSize = 5, agent = '') {
+    // Nếu agent không truyền vào, dùng agent đang filter
+    if (typeof agent === 'undefined') agent = currentLogAgent;
+    else currentLogAgent = agent;
+    let url = `logs/paged?page=${page}&pageSize=${pageSize}`;
+    if (agent) url += `&agent=${encodeURIComponent(agent)}`;
     try {
         const res = await fetchWithAuth(url);
         if (res.ok) {
             const data = await res.json();
-            const logs = Array.isArray(data.data) ? data.data : [];
-            renderLogs(logs);
+            renderLogsPaged(data.logs || []);
+            renderLogPagination(page, pageSize, data.total || 0);
+            logTotal = data.total || 0;
+            currentLogPage = page;
         } else {
-            renderLogs([]);
+            renderLogsPaged([]);
+            renderLogPagination(1, pageSize, 0);
         }
     } catch (e) {
-        renderLogs([]);
+        renderLogsPaged([]);
+        renderLogPagination(1, pageSize, 0);
     }
 }
-function extractLevelFromMessage(msg) {
-    // Tìm [LEVEL] trong message
-    const match = msg.match(/\[(.*?)\]/);
-    return match ? match[1] : '';
-}
-function extractEventFromMessage(msg) {
-    // Lấy phần sau dấu - (nếu có)
-    const idx = msg.indexOf(' - ');
-    return idx !== -1 ? msg.slice(idx + 3) : msg;
-}
-function renderLogs(logs) {
+
+function renderLogsPaged(logs) {
     const tbody = document.querySelector('.log-table tbody');
     if (!tbody) return;
     tbody.innerHTML = '';
@@ -110,23 +114,54 @@ function renderLogs(logs) {
         return;
     }
     for (const log of logs) {
-        const level = extractLevelFromMessage(log.message || '');
-        const event = extractEventFromMessage(log.message || '');
         tbody.innerHTML += `
         <tr>
             <td>${log.time || ''}</td>
             <td>${log.agent_id || ''}</td>
-            <td><span class="${level ? level.toLowerCase() : 'info'}">${level || ''}</span></td>
-            <td>${event || ''}</td>
+            <td></td>
+            <td>${log.message || ''}</td>
         </tr>`;
     }
 }
+
+function renderLogPagination(page, pageSize, total) {
+    const container = document.querySelector('.log-pagination');
+    if (!container) return;
+    const totalPages = Math.ceil(total / pageSize);
+    if (totalPages <= 1) {
+        container.innerHTML = '';
+        return;
+    }
+    let html = `<button class="log-page-btn" data-page="${page-1}" ${page<=1?'disabled':''}>&laquo;</button>`;
+    for (let i = 1; i <= totalPages; i++) {
+        if (i === 1 || i === totalPages || Math.abs(i-page)<=1) {
+            html += `<button class="log-page-btn${i===page?' active':''}" data-page="${i}">${i}</button>`;
+        } else if (i === page-2 || i === page+2) {
+            html += `<span style="padding:0 4px;">...</span>`;
+        }
+    }
+    html += `<button class="log-page-btn" data-page="${page+1}" ${page>=totalPages?'disabled':''}>&raquo;</button>`;
+    html += `<span style="margin-left:12px;color:#888;">Tổng: ${total}</span>`;
+    container.innerHTML = html;
+
+    // Gán sự kiện chuyển trang, luôn truyền agent đang filter
+    container.querySelectorAll('.log-page-btn').forEach(btn => {
+        btn.onclick = function() {
+            const p = parseInt(btn.getAttribute('data-page'));
+            if (p >= 1 && p <= totalPages && p !== page) {
+                loadLogsPaged(p, pageSize, currentLogAgent);
+            }
+        };
+    });
+}
+
+// Sửa setupLogFilter để gọi loadLogsPaged
 function setupLogFilter() {
     const select = document.querySelector('.log-filter');
     if (select) {
         select.addEventListener('change', function() {
             const agent = select.value === 'Tất cả Agent' ? '' : select.value;
-            loadLogs(agent);
+            loadLogsPaged(1, logPageSize, agent);
         });
     }
 }
@@ -592,7 +627,7 @@ document.addEventListener('DOMContentLoaded', function() {
     loadOverview();
     setupLogout();
     loadAgentOptions();
-    loadLogs();
+    loadLogsPaged(1, logPageSize);
     setupLogFilter();
     // Gắn data-section cho sidebar
     const sidebarLinks = document.querySelectorAll('.sidebar ul li a');

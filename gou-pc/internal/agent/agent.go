@@ -272,7 +272,7 @@ func RegisterAgent(a *Agent, configPath string) (clientID, agentID string, err e
 func (a *Agent) WatchLogAndSend(logPath string, interval time.Duration, agentID string) {
 	// Lưu offset vào cùng thư mục với logPath, tên file: <logPath>.offset
 	offsetPath := logPath + ".offset"
-	if !isAbsPath(offsetPath) {
+	if !IsAbsPath(offsetPath) {
 		cwd, _ := os.Getwd()
 		offsetPath = cwd + string(os.PathSeparator) + offsetPath
 	}
@@ -304,7 +304,7 @@ func (a *Agent) WatchLogAndSend(logPath string, interval time.Duration, agentID 
 			buf := make([]byte, stat.Size()-lastSize)
 			_, err := file.Read(buf)
 			if err == nil {
-				lines := splitLines(string(buf))
+				lines := SplitLines(string(buf))
 				for _, line := range lines {
 					if line == "" {
 						continue
@@ -327,11 +327,11 @@ func (a *Agent) WatchLogAndSend(logPath string, interval time.Duration, agentID 
 	}
 }
 
-func isAbsPath(path string) bool {
+func IsAbsPath(path string) bool {
 	return len(path) > 1 && (path[1] == ':' || path[0] == '/' || path[0] == '\\')
 }
 
-func splitLines(s string) []string {
+func SplitLines(s string) []string {
 	var lines []string
 	start := 0
 	for i, c := range s {

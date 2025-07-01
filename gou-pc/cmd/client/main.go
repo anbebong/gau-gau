@@ -7,8 +7,6 @@ import (
 	"gou-pc/internal/config"
 	"gou-pc/internal/logutil"
 	"os"
-	"os/exec"
-	"strings"
 	"time"
 
 	"github.com/kardianos/service"
@@ -133,7 +131,7 @@ func mainLogic() {
 	go func() {
 		logPath := cfg.EventLog
 		offsetPath := cfg.OffsetFile
-		if !isAbsPath(offsetPath) {
+		if !agent.IsAbsPath(offsetPath) {
 			cwd, _ := os.Getwd()
 			offsetPath = cwd + string(os.PathSeparator) + offsetPath
 		}
@@ -163,7 +161,7 @@ func mainLogic() {
 				buf := make([]byte, stat.Size()-lastSize)
 				_, err := file.Read(buf)
 				if err == nil {
-					lines := splitLines(string(buf))
+					lines := agent.SplitLines(string(buf))
 					for _, line := range lines {
 						if line == "" {
 							continue
@@ -223,26 +221,22 @@ func main() {
 		case "install-service":
 			err = s.Install()
 			if err != nil {
+				logutil.CoreError("Install service failed: %v", err)
 				fmt.Println("Install service failed:", err)
-				fmt.Println("Nếu lỗi quyền, hãy chạy terminal với quyền Administrator!")
+				// fmt.Println("Nếu lỗi quyền, hãy chạy terminal với quyền Administrator!")
 			} else {
-				// Kiểm tra lại service có thực sự tồn tại sau khi cài
-				fmt.Println("Service installed, kiểm tra lại danh sách service...")
-				output, scErr := execCommand("sc", "query", serviceName)
-				if scErr != nil || !serviceExistsInSC(output, serviceName) {
-					fmt.Println("CẢNH BÁO: Service KHÔNG đăng ký thành công! Có thể bạn chưa chạy terminal với quyền Administrator hoặc bị chặn bởi Defender!")
-					fmt.Printf("Chi tiết lỗi sc: %v\nOutput: %s\n", scErr, output)
-				} else {
-					fmt.Println("Service installed successfully và đã xuất hiện trong danh sách service!")
-				}
+				logutil.CoreInfo("Service installed successfully!")
+				fmt.Println("Service installed successfully!")
 			}
 			return
 		case "uninstall-service":
 			err = s.Uninstall()
 			if err != nil {
+				logutil.CoreError("Uninstall service failed: %v", err)
 				fmt.Println("Uninstall service failed:", err)
-				fmt.Println("Nếu lỗi quyền, hãy chạy terminal với quyền Administrator!")
+				// fmt.Println("Nếu lỗi quyền, hãy chạy terminal với quyền Administrator!")
 			} else {
+				logutil.CoreInfo("Service uninstalled successfully!")
 				fmt.Println("Service uninstalled successfully!")
 			}
 			return
@@ -252,37 +246,7 @@ func main() {
 	// Nếu không phải lệnh service thì chạy service logic
 	err = s.Run()
 	if err != nil {
+		logutil.CoreError("Run service failed: %v", err)
 		fmt.Println("Run service failed:", err)
 	}
-}
-
-func execCommand(name string, arg ...string) (string, error) {
-	cmd := exec.Command(name, arg...)
-	output, err := cmd.CombinedOutput()
-	return string(output), err
-}
-
-func serviceExistsInSC(output, serviceName string) bool {
-	return strings.Contains(output, serviceName)
-}
-
-// Hàm tiện ích: kiểm tra đường dẫn tuyệt đối
-func isAbsPath(path string) bool {
-	return len(path) > 1 && (path[1] == ':' || path[0] == '/' || path[0] == '\\')
-}
-
-// Hàm tiện ích: tách dòng
-func splitLines(s string) []string {
-	var lines []string
-	start := 0
-	for i, c := range s {
-		if c == '\n' {
-			lines = append(lines, s[start:i])
-			start = i + 1
-		}
-	}
-	if start < len(s) {
-		lines = append(lines, s[start:])
-	}
-	return lines
 }
