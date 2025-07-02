@@ -1,0 +1,18 @@
+/* CSS cho trạng thái Online/Offline */
+.online-status {
+    display: inline-block;
+    padding: 6px 12px;
+    background-color: #28a745;
+    color: #fff;
+    border-radius: 4px;
+    font-weight: bold;
+}
+
+.offline-status {
+    display: inline-block;
+    padding: 6px 12px;
+    background-color: #dc1b0e;
+    color: #fff;
+    border-radius: 4px;
+    font-weight: bold;
+}

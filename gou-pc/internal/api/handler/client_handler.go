@@ -171,3 +171,17 @@ func GetMyOTPHandler(c *gin.Context) {
 	}
 	response.Success(c, gin.H{"agent_id": agentID, "otp": otp, "expire_in": secondsLeft})
 }
+
+func HandleListMyClients(c *gin.Context) {
+	username, ok := c.Get("username")
+	if !ok {
+		response.Error(c, http.StatusUnauthorized, "username not found in context")
+		return
+	}
+	clients, err := clientService.GetClientsByUsername(username.(string))
+	if err != nil {
+		response.Error(c, http.StatusInternalServerError, err.Error())
+		return
+	}
+	response.Success(c, clients)
+}

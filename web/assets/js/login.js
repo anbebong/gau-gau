@@ -21,6 +21,7 @@ async function handleLogin(event) {
             localStorage.setItem('jwt_token', data.data.token);
             localStorage.setItem('username', data.data.user.username);
             localStorage.setItem('role', data.data.user.role);
+            localStorage.setItem('user_info', JSON.stringify(data.data.user)); // Lưu thông tin user
             // Chuyển hướng theo role
             if (data.data.user.role === 'admin') {
                 window.location.href = '../pages/dashboard_admin.html';
