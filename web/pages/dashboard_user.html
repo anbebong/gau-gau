@@ -1,49 +1,144 @@
 <!DOCTYPE html>
 <html lang="vi">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>User Dashboard</title>
     <link rel="stylesheet" href="../assets/css/style.css">
+    <link rel="stylesheet" href="../assets/css/log-pagination.css">
+    <link rel="stylesheet" href="../assets/css/device-status.css">
 </head>
+
 <body>
     <div class="sidebar">
         <h2>User Dashboard</h2>
         <ul>
-            <li><a href="#" class="active">Tổng quan cá nhân</a></li>
+            <li><a href="#" class="active">Tổng quan</a></li>
         </ul>
     </div>
     <div class="header">
-        <span>User Dashboard</span>
+        <span></span>
         <div class="user">
             <button class="logout-btn" onclick="window.location.href='login.html'">Đăng xuất</button>
         </div>
     </div>
     <div class="main">
-        <h2 style="margin-bottom: 18px;">Thông tin cá nhân và thiết bị</h2>
+        <div class="section-title-row"
+            style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px;">
+            <h2 style="margin: 0;">Thông tin cá nhân và thiết bị</h2>
+            <button id="reload-btn" class="reload-btn" title="Làm mới" aria-label="Làm mới">
+                <svg class="reload-icon" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                    xmlns="http://www.w3.org/2000/svg">
+                    <path d="M18.36 5.64a9 9 0 1 1-12.72 0" stroke="#6a5af9" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+                </svg>
+            </button>
+        </div>
         <div class="profile-section">
-            <div class="profile-card">
-                <h3>Hồ sơ cá nhân</h3>
+            <div class="profile-card" style="min-width: 240px; max-width: 280px; width: 100%; font-size: 16px;">
+                <h3 class="profile-title-chip" style="font-size: 18px;">Hồ sơ cá nhân</h3>
                 <form class="profile-form">
-                    <label for="username">Tên đăng nhập:</label>
-                    <input type="text" id="username" value="an">
-                    <label for="email">Email:</label>
-                    <input type="email" id="email" value="user1@example.com">
-                    <label for="fullname">Họ tên:</label>
-                    <input type="text" id="fullname" value="annnn">
-                    <button type="button">Cập nhật thông tin</button>
+                    <label class="profile-label-chip" for="fullname">Họ tên:</label>
+                    <div class="profile-info-chip">
+                        <input type="text" id="fullname" value="annnn">
+                    </div>
+                    <label class="profile-label-chip" for="email">Email:</label>
+                    <div class="profile-info-chip">
+                        <input type="email" id="email" value="user1@example.com">
+                    </div>
+                    <div style="display: flex; gap: 10px; margin-top: 10px;">
+                        <button type="button" class="btn btn-update">Cập nhật thông tin</button>
+                        <button type="button" id="change-password-btn" class="btn btn-change-password">Đổi mật khẩu</button>
+                    </div>
                 </form>
             </div>
-            <div class="device-card">
-                <h3>Thông tin thiết bị được gán</h3>
-                <div class="no-device">
-                    Bạn chưa được gán thiết bị nào.<br>
-                    <span style="font-size:13px;">Vui lòng liên hệ quản trị viên để được hỗ trợ.</span>
+            <!-- Modal đổi mật khẩu -->
+            <div id="change-password-modal" class="modal"
+                style="display:none; position:fixed; z-index:1000; left:0; top:0; width:100vw; height:100vh; background:rgba(0,0,0,0.3); justify-content:center; align-items:center;">
+                <div
+                    style="background:#fff; padding:24px 28px; border-radius:8px; min-width:320px; max-width:90vw; box-shadow:0 2px 16px rgba(0,0,0,0.15); position:relative;">
+                    <h3 style="margin-top:0;">Đổi mật khẩu</h3>
+                    <form id="change-password-form">
+                        <label for="old-password">Mật khẩu hiện tại:</label>
+                        <input type="password" id="old-password" required>
+                        <label for="new-password">Mật khẩu mới:</label>
+                        <input type="password" id="new-password" required>
+                        <label for="confirm-password">Xác nhận mật khẩu mới:</label>
+                        <input type="password" id="confirm-password" required>
+                        <div style="display:flex; gap:10px; margin-top:14px;">
+                            <button type="submit">Xác nhận</button>
+                            <button type="button" id="close-modal-btn">Hủy</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            <div class="device-card" style="padding: 0;">
+                <div class="device-table-container" style="margin: 0; padding: 0;">
+                    <table class="device-table"
+                        style="width: 100%; border-collapse: collapse; font-size: 16px; margin: 0; padding: 0;">
+                        <thead>
+                            <tr style="background-color: #e6e6e6;">
+                                <th style="border: 1px solid #ccc; padding: 14px; width: 9%; min-width: 80px; text-align: left;">Agent ID
+                                </th>
+                                <th style="border: 1px solid #ccc; padding: 14px; width: 50%; text-align: left;">Thông
+                                    tin thiết bị</th>
+                                <th style="border: 1px solid #ccc; padding: 14px; width: 16%; text-align: left;">Trạng
+                                    thái</th>
+                                <th style="border: 1px solid #ccc; padding: 14px; width: 20%; text-align: center;">Hành
+                                    động</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr style="background-color: #f9f9f9;">
+                                <td style="border: 1px solid #ccc; padding: 14px;">Agent 1</td>
+                                <td style="border: 1px solid #ccc; padding: 14px; text-align: left;">
+                                    <div style="margin-bottom: 8px;"><b>Tên:</b> Thiết bị 1</div>
+                                    <div style="margin-bottom: 8px;"><b>IP:</b> 192.168.1.1</div>
+                                    <div style="margin-bottom: 8px;"><b>MAC:</b> 00:1A:2B:3C:4D:5E</div>
+                                    <div style="margin-bottom: 8px;"><b>Hardware ID:</b> HW12345</div>
+                                </td>
+                                <td style="border: 1px solid #ccc; padding: 14px;">
+                                    <div style="margin-bottom: 8px;">
+                                        <span class="online-status">Online</span>
+                                    </div>
+                                    <div><b>Last seen:</b> 2025-07-02 14:00:00</div>
+                                </td>
+                                <td style="border: 1px solid #ccc; padding: 14px; text-align: center;">
+                                    <button class="otp-btn"
+                                        style="padding: 10px 20px; background-color: #4216b1; color: #fff; border: none; border-radius: 6px; cursor: pointer; font-size: 14px;">Lấy
+                                        OTP</button>
+                                </td>
+                            </tr>
+                            <tr style="background-color: #ffffff;">
+                                <td style="border: 1px solid #ccc; padding: 14px;">Agent 2</td>
+                                <td style="border: 1px solid #ccc; padding: 14px; text-align: left;">
+                                    <div style="margin-bottom: 8px;"><b>Tên:</b> Thiết bị 2</div>
+                                    <div style="margin-bottom: 8px;"><b>IP:</b> 192.168.1.2</div>
+                                    <div style="margin-bottom: 8px;"><b>MAC:</b> 00:1A:2B:3C:4D:5F</div>
+                                    <div style="margin-bottom: 8px;"><b>Hardware ID:</b> HW67890</div>
+                                </td>
+                                <td style="border: 1px solid #ccc; padding: 14px;">
+                                    <div style="margin-bottom: 8px;">
+                                        <span class="offline-status">Offline</span>
+                                    </div>
+                                    <div><b>Last seen:</b> 2025-07-01 18:00:00</div>
+                                </td>
+                                <td style="border: 1px solid #ccc; padding: 14px; text-align: center;">
+                                    <button class="otp-btn"
+                                        style="padding: 10px 20px; background-color: #4216b1; color: #fff; border: none; border-radius: 6px; cursor: pointer; font-size: 14px;">Lấy
+                                        OTP</button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
         <div class="log-section">
-            <h4>Log thiết bị</h4>
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+                <h4 style="margin: 0;">Log thiết bị</h4>
+                <select id="agent-filter" style="min-width: 180px; padding: 4px 8px;"></select>
+            </div>
             <div class="log-table-container">
                 <table class="log-table">
                     <thead>
@@ -52,7 +147,6 @@
                             <th>THIẾT BỊ</th>
                             <th>MỨC ĐỘ</th>
                             <th>SỰ KIỆN</th>
-                            <th>CHI TIẾT</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -62,8 +156,16 @@
                     </tbody>
                 </table>
             </div>
+            <div style="display: flex; align-items: center; margin-top: 8px; gap: 12px;">
+                <div style="flex:1"></div>
+                <div id="log-pagination" class="log-pagination"
+                    style="flex:0 0 auto; justify-content: center; display: flex;"></div>
+                <div id="log-total"
+                    style="font-size: 14px; color: #4216b1; font-weight: 500; flex:1; text-align:right;"></div>
+            </div>
         </div>
     </div>
     <script src="../assets/js/dashboard_user.js"></script>
 </body>
+
 </html>

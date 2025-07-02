@@ -18,6 +18,7 @@ type ClientService interface {
 	GetClientByID(clientID string) (*ManagedClientResponse, error)
 	DeleteClientByAgentID(agentID string) error
 	DeleteClientByClientID(clientID string) error
+	GetClientsByUsername(username string) ([]ManagedClientResponse, error)
 }
 
 // Response struct trả về client cho API, có Username thay vì user_id
@@ -152,4 +153,29 @@ func (s *clientServiceImpl) DeleteClientByClientID(clientID string) error {
 		return errors.New("client not found")
 	}
 	return s.repo.ClientDeleteByID(clientID)
+}
+
+func (s *clientServiceImpl) GetClientsByUsername(username string) ([]ManagedClientResponse, error) {
+	if username == "" {
+		return nil, errors.New("username is required")
+	}
+	logutil.APIDebug("ClientService.GetClientsByUsername called with username=%s", username)
+	clients, err := s.repo.ClientGetAll()
+	if err != nil {
+		return nil, err
+	}
+	var resp []ManagedClientResponse
+	for _, c := range clients {
+		if c.UserName == username {
+			resp = append(resp, ManagedClientResponse{
+				ClientID:   c.ClientID,
+				AgentID:    c.AgentID,
+				DeviceInfo: c.DeviceInfo,
+				Username:   c.UserName,
+				LastSeen:   c.LastSeen,
+				Online:     c.Online,
+			})
+		}
+	}
+	return resp, nil
 }

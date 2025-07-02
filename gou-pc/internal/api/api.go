@@ -43,6 +43,7 @@ func Start(port string, userService service.UserService, clientService service.C
 
 		// Client routes
 		api.GET("/clients", handler.HandleListClients)
+		api.GET("/clients/my", handler.HandleListMyClients)
 		api.GET("/clients/:agent_id", handler.HandleGetClientByAgentID)
 		api.GET("/clients/by-id/:client_id", handler.HandleGetClientByID)
 		api.DELETE("/clients/delete-agentid", middleware.JWTAuthMiddleware(handler.HandleDeleteClientByAgentID, true))       // admin only
@@ -56,6 +57,7 @@ func Start(port string, userService service.UserService, clientService service.C
 		// Log routes
 		api.GET("/logs/archive", middleware.JWTAuthMiddleware(handler.GetArchiveLogHandler, true)) // admin only
 		api.GET("/logs/my-device", handler.GetMyDeviceLogHandler)
+		api.GET("/logs/my-device-paged", handler.GetMyDeviceLogPagedHandler)
 		api.GET("/logs/paged", middleware.JWTAuthMiddleware(handler.GetLogsPagedHandler, true)) // admin only
 	}
 

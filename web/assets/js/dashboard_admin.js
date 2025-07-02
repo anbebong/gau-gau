@@ -77,7 +77,7 @@ function setupLogout() {
 }
 // ========== LOGS WITH PAGINATION ========== //
 let currentLogPage = 1;
-let logPageSize = 5;
+let logPageSize = 10;
 let logTotal = 0;
 let currentLogAgent = '';
 

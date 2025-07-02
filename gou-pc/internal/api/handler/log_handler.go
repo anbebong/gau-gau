@@ -104,3 +104,44 @@ func GetLogsPagedHandler(c *gin.Context) {
 		"total": total,
 	})
 }
+
+func GetMyDeviceLogPagedHandler(c *gin.Context) {
+	username, ok := c.Get("username")
+	if !ok {
+		response.Error(c, http.StatusUnauthorized, "username not found in context")
+		return
+	}
+	agentID := c.Query("agent")
+	if agentID == "" {
+		response.Error(c, http.StatusBadRequest, "agent param required")
+		return
+	}
+	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
+	pageSize, _ := strconv.Atoi(c.DefaultQuery("pageSize", "10"))
+	// Kiểm tra agentID có thuộc user không
+	clients, err := clientService.GetClientsByUsername(username.(string))
+	if err != nil {
+		response.Error(c, http.StatusInternalServerError, err.Error())
+		return
+	}
+	found := false
+	for _, cl := range clients {
+		if cl.AgentID == agentID {
+			found = true
+			break
+		}
+	}
+	if !found {
+		response.Error(c, http.StatusForbidden, "agent_id not assigned to user")
+		return
+	}
+	logs, total, err := logService.GetLogsPagedByAgentID(agentID, page, pageSize)
+	if err != nil {
+		response.Error(c, http.StatusInternalServerError, err.Error())
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"logs":  logs,
+		"total": total,
+	})
+}
