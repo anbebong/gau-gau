@@ -45,15 +45,15 @@ void LogEvent(const wchar_t* message)
 // using CoTaskMemAlloc. Returns that buffer in ppcpfd.
 //
 HRESULT FieldDescriptorCoAllocCopy(
-    _In_ const CREDENTIAL_PROVIDER_FIELD_DESCRIPTOR &rcpfd,
-    _Outptr_result_nullonfailure_ CREDENTIAL_PROVIDER_FIELD_DESCRIPTOR **ppcpfd
-    )
+    _In_ const CREDENTIAL_PROVIDER_FIELD_DESCRIPTOR& rcpfd,
+    _Outptr_result_nullonfailure_ CREDENTIAL_PROVIDER_FIELD_DESCRIPTOR** ppcpfd
+)
 {
     HRESULT hr;
     *ppcpfd = nullptr;
     DWORD cbStruct = sizeof(**ppcpfd);
 
-    CREDENTIAL_PROVIDER_FIELD_DESCRIPTOR *pcpfd = (CREDENTIAL_PROVIDER_FIELD_DESCRIPTOR*)CoTaskMemAlloc(cbStruct);
+    CREDENTIAL_PROVIDER_FIELD_DESCRIPTOR* pcpfd = (CREDENTIAL_PROVIDER_FIELD_DESCRIPTOR*)CoTaskMemAlloc(cbStruct);
     if (pcpfd)
     {
         pcpfd->dwFieldID = rcpfd.dwFieldID;
@@ -81,7 +81,7 @@ HRESULT FieldDescriptorCoAllocCopy(
     }
     else
     {
-        CoTaskMemFree(pcpfd);   
+        CoTaskMemFree(pcpfd);
     }
 
     return hr;
@@ -93,9 +93,9 @@ HRESULT FieldDescriptorCoAllocCopy(
 // pcpfd->pszLabel.
 //
 HRESULT FieldDescriptorCopy(
-    _In_ const CREDENTIAL_PROVIDER_FIELD_DESCRIPTOR &rcpfd,
-    _Out_ CREDENTIAL_PROVIDER_FIELD_DESCRIPTOR *pcpfd
-    )
+    _In_ const CREDENTIAL_PROVIDER_FIELD_DESCRIPTOR& rcpfd,
+    _Out_ CREDENTIAL_PROVIDER_FIELD_DESCRIPTOR* pcpfd
+)
 {
     HRESULT hr;
     CREDENTIAL_PROVIDER_FIELD_DESCRIPTOR cpfd;
@@ -131,8 +131,8 @@ HRESULT FieldDescriptorCopy(
 //
 HRESULT UnicodeStringInitWithString(
     _In_ PWSTR pwz,
-    _Out_ UNICODE_STRING *pus
-    )
+    _Out_ UNICODE_STRING* pus
+)
 {
     HRESULT hr;
     if (pwz)
@@ -177,8 +177,8 @@ HRESULT UnicodeStringInitWithString(
 static void _UnicodeStringPackedUnicodeStringCopy(
     __in const UNICODE_STRING& rus,
     __in PWSTR pwzBuffer,
-    __out UNICODE_STRING *pus
-    )
+    __out UNICODE_STRING* pus
+)
 {
     pus->Length = rus.Length;
     pus->MaximumLength = rus.Length;
@@ -201,13 +201,13 @@ HRESULT KerbInteractiveUnlockLogonInit(
     _In_ PWSTR pwzUsername,
     _In_ PWSTR pwzPassword,
     _In_ CREDENTIAL_PROVIDER_USAGE_SCENARIO cpus,
-    _Out_ KERB_INTERACTIVE_UNLOCK_LOGON *pkiul
-    )
+    _Out_ KERB_INTERACTIVE_UNLOCK_LOGON* pkiul
+)
 {
     KERB_INTERACTIVE_UNLOCK_LOGON kiul;
     ZeroMemory(&kiul, sizeof(kiul));
 
-    KERB_INTERACTIVE_LOGON *pkil = &kiul.Logon;
+    KERB_INTERACTIVE_LOGON* pkil = &kiul.Logon;
 
     // Note: this method uses custom logic to pack a KERB_INTERACTIVE_UNLOCK_LOGON with a
     // serialized credential.  We could replace the calls to UnicodeStringInitWithString
@@ -286,14 +286,14 @@ HRESULT KerbInteractiveUnlockLogonInit(
 //
 
 HRESULT KerbInteractiveUnlockLogonPack(
-    _In_ const KERB_INTERACTIVE_UNLOCK_LOGON &rkiulIn,
-    _Outptr_result_bytebuffer_(*pcb) BYTE **prgb,
-    _Out_ DWORD *pcb
-    )
+    _In_ const KERB_INTERACTIVE_UNLOCK_LOGON& rkiulIn,
+    _Outptr_result_bytebuffer_(*pcb) BYTE** prgb,
+    _Out_ DWORD* pcb
+)
 {
     HRESULT hr;
 
-    const KERB_INTERACTIVE_LOGON *pkilIn = &rkiulIn.Logon;
+    const KERB_INTERACTIVE_LOGON* pkilIn = &rkiulIn.Logon;
 
     // alloc space for struct plus extra for the three strings
     DWORD cb = sizeof(rkiulIn) +
@@ -301,7 +301,7 @@ HRESULT KerbInteractiveUnlockLogonPack(
         pkilIn->UserName.Length +
         pkilIn->Password.Length;
 
-    KERB_INTERACTIVE_UNLOCK_LOGON *pkiulOut = (KERB_INTERACTIVE_UNLOCK_LOGON*)CoTaskMemAlloc(cb);
+    KERB_INTERACTIVE_UNLOCK_LOGON* pkiulOut = (KERB_INTERACTIVE_UNLOCK_LOGON*)CoTaskMemAlloc(cb);
     if (pkiulOut)
     {
         ZeroMemory(&pkiulOut->LogonId, sizeof(pkiulOut->LogonId));
@@ -309,12 +309,12 @@ HRESULT KerbInteractiveUnlockLogonPack(
         //
         // point pbBuffer at the beginning of the extra space
         //
-        BYTE *pbBuffer = (BYTE*)pkiulOut + sizeof(*pkiulOut);
+        BYTE* pbBuffer = (BYTE*)pkiulOut + sizeof(*pkiulOut);
 
         //
         // set up the Logon structure within the KERB_INTERACTIVE_UNLOCK_LOGON
         //
-        KERB_INTERACTIVE_LOGON *pkilOut = &pkiulOut->Logon;
+        KERB_INTERACTIVE_LOGON* pkilOut = &pkiulOut->Logon;
 
         pkilOut->MessageType = pkilIn->MessageType;
 
@@ -354,7 +354,7 @@ HRESULT KerbInteractiveUnlockLogonPack(
 static HRESULT _LsaInitString(
     __out PSTRING pszDestinationString,
     __in PCSTR pszSourceString
-    )
+)
 {
     size_t cchLength = strlen(pszSourceString);
     USHORT usLength;
@@ -363,7 +363,7 @@ static HRESULT _LsaInitString(
     {
         pszDestinationString->Buffer = (PCHAR)pszSourceString;
         pszDestinationString->Length = usLength;
-        pszDestinationString->MaximumLength = pszDestinationString->Length+1;
+        pszDestinationString->MaximumLength = pszDestinationString->Length + 1;
         hr = S_OK;
     }
     return hr;
@@ -374,7 +374,7 @@ static HRESULT _LsaInitString(
 // For more information on auth packages see this msdn page:
 // http://msdn.microsoft.com/library/default.asp?url=/library/en-us/secauthn/security/msv1_0_lm20_logon.asp
 //
-HRESULT RetrieveNegotiateAuthPackage(_Out_ ULONG *pulAuthPackage)
+HRESULT RetrieveNegotiateAuthPackage(_Out_ ULONG* pulAuthPackage)
 {
     HRESULT hr;
     HANDLE hLsa;
@@ -413,8 +413,8 @@ HRESULT RetrieveNegotiateAuthPackage(_Out_ ULONG *pulAuthPackage)
 //
 static HRESULT _ProtectAndCopyString(
     _In_ PCWSTR pwzToProtect,
-    _Outptr_result_nullonfailure_ PWSTR *ppwzProtected
-    )
+    _Outptr_result_nullonfailure_ PWSTR* ppwzProtected
+)
 {
     *ppwzProtected = nullptr;
 
@@ -430,7 +430,7 @@ static HRESULT _ProtectAndCopyString(
         // Note that the third parameter to CredProtect, the number of characters of pwzToProtectCopy
         // to encrypt, must include the NULL terminator!
         DWORD cchProtected = 0;
-        if (!CredProtectW(FALSE, pwzToProtectCopy, (DWORD)wcslen(pwzToProtectCopy)+1, nullptr, &cchProtected, nullptr))
+        if (!CredProtectW(FALSE, pwzToProtectCopy, (DWORD)wcslen(pwzToProtectCopy) + 1, nullptr, &cchProtected, nullptr))
         {
             DWORD dwErr = GetLastError();
 
@@ -441,7 +441,7 @@ static HRESULT _ProtectAndCopyString(
                 if (pwzProtected)
                 {
                     // The second call to CredProtect actually encrypts the string.
-                    if (CredProtectW(FALSE, pwzToProtectCopy, (DWORD)wcslen(pwzToProtectCopy)+1, pwzProtected, &cchProtected, nullptr))
+                    if (CredProtectW(FALSE, pwzToProtectCopy, (DWORD)wcslen(pwzToProtectCopy) + 1, pwzProtected, &cchProtected, nullptr))
                     {
                         *ppwzProtected = pwzProtected;
                         hr = S_OK;
@@ -483,8 +483,8 @@ static HRESULT _ProtectAndCopyString(
 HRESULT ProtectIfNecessaryAndCopyPassword(
     _In_ PCWSTR pwzPassword,
     _In_ CREDENTIAL_PROVIDER_USAGE_SCENARIO cpus,
-    _Outptr_result_nullonfailure_ PWSTR *ppwzProtectedPassword
-    )
+    _Outptr_result_nullonfailure_ PWSTR* ppwzProtectedPassword
+)
 {
     *ppwzProtectedPassword = nullptr;
 
@@ -542,13 +542,13 @@ HRESULT ProtectIfNecessaryAndCopyPassword(
 // memory space boundary is not going to work -- repack it if necessary!
 //
 void KerbInteractiveUnlockLogonUnpackInPlace(
-    _Inout_updates_bytes_(cb) KERB_INTERACTIVE_UNLOCK_LOGON *pkiul,
+    _Inout_updates_bytes_(cb) KERB_INTERACTIVE_UNLOCK_LOGON* pkiul,
     DWORD cb
-    )
+)
 {
     if (sizeof(*pkiul) <= cb)
     {
-        KERB_INTERACTIVE_LOGON *pkil = &pkiul->Logon;
+        KERB_INTERACTIVE_LOGON* pkil = &pkiul->Logon;
 
         // Sanity check: if the range described by each (Buffer + MaximumSize) falls within the total bytecount,
         // we can be pretty confident that the Buffers are actually offsets and that this is a packed credential.
@@ -576,11 +576,11 @@ void KerbInteractiveUnlockLogonUnpackInPlace(
 // cred blob into a 64 bit native blob by unpacking it and immediately repacking it.
 //
 HRESULT KerbInteractiveUnlockLogonRepackNative(
-    _In_reads_bytes_(cbWow) BYTE *rgbWow,
+    _In_reads_bytes_(cbWow) BYTE* rgbWow,
     _In_ DWORD cbWow,
-    _Outptr_result_bytebuffer_(*pcbNative) BYTE **prgbNative,
-    _Out_ DWORD *pcbNative
-    )
+    _Outptr_result_bytebuffer_(*pcbNative) BYTE** prgbNative,
+    _Out_ DWORD* pcbNative
+)
 {
     HRESULT hr = E_OUTOFMEMORY;
     PWSTR pszDomainUsername = nullptr;
@@ -595,10 +595,10 @@ HRESULT KerbInteractiveUnlockLogonRepackNative(
     CredUnPackAuthenticationBufferW(CRED_PACK_WOW_BUFFER, rgbWow, cbWow, pszDomainUsername, &cchDomainUsername, nullptr, nullptr, pszPassword, &cchPassword);
     if (ERROR_INSUFFICIENT_BUFFER == GetLastError())
     {
-        pszDomainUsername = (PWSTR) LocalAlloc(0, cchDomainUsername * sizeof(wchar_t));
+        pszDomainUsername = (PWSTR)LocalAlloc(0, cchDomainUsername * sizeof(wchar_t));
         if (pszDomainUsername)
         {
-            pszPassword = (PWSTR) LocalAlloc(0, cchPassword * sizeof(wchar_t));
+            pszPassword = (PWSTR)LocalAlloc(0, cchPassword * sizeof(wchar_t));
             if (pszPassword)
             {
                 if (CredUnPackAuthenticationBufferW(CRED_PACK_WOW_BUFFER, rgbWow, cbWow, pszDomainUsername, &cchDomainUsername, nullptr, nullptr, pszPassword, &cchPassword))
@@ -620,7 +620,7 @@ HRESULT KerbInteractiveUnlockLogonRepackNative(
         CredPackAuthenticationBufferW(0, pszDomainUsername, pszPassword, *prgbNative, pcbNative);
         if (ERROR_INSUFFICIENT_BUFFER == GetLastError())
         {
-            *prgbNative = (BYTE*) LocalAlloc(LMEM_ZEROINIT, *pcbNative);
+            *prgbNative = (BYTE*)LocalAlloc(LMEM_ZEROINIT, *pcbNative);
             if (*prgbNative)
             {
                 if (CredPackAuthenticationBufferW(0, pszDomainUsername, pszPassword, *prgbNative, pcbNative))
@@ -648,15 +648,15 @@ HRESULT KerbInteractiveUnlockLogonRepackNative(
 HRESULT DomainUsernameStringAlloc(
     _In_ PCWSTR pwszDomain,
     _In_ PCWSTR pwszUsername,
-    _Outptr_result_nullonfailure_ PWSTR *ppwszDomainUsername
-    )
+    _Outptr_result_nullonfailure_ PWSTR* ppwszDomainUsername
+)
 {
     HRESULT hr;
     *ppwszDomainUsername = nullptr;
     size_t cchDomain = wcslen(pwszDomain);
     size_t cchUsername = wcslen(pwszUsername);
     // Length of domain, 1 character for '\', length of Username, plus null terminator.
-    size_t cbLen = sizeof(wchar_t) * (cchDomain + 1 + cchUsername +1);
+    size_t cbLen = sizeof(wchar_t) * (cchDomain + 1 + cchUsername + 1);
     PWSTR pwszDest = (PWSTR)HeapAlloc(GetProcessHeap(), 0, cbLen);
     if (pwszDest)
     {
@@ -678,22 +678,22 @@ HRESULT DomainUsernameStringAlloc(
     return hr;
 }
 
-HRESULT SplitDomainAndUsername(_In_ PCWSTR pszQualifiedUserName, _Outptr_result_nullonfailure_ PWSTR *ppszDomain, _Outptr_result_nullonfailure_ PWSTR *ppszUsername)
+HRESULT SplitDomainAndUsername(_In_ PCWSTR pszQualifiedUserName, _Outptr_result_nullonfailure_ PWSTR* ppszDomain, _Outptr_result_nullonfailure_ PWSTR* ppszUsername)
 {
     HRESULT hr = E_UNEXPECTED;
     *ppszDomain = nullptr;
     *ppszUsername = nullptr;
     PWSTR pszDomain;
     PWSTR pszUsername;
-    const wchar_t *pchWhack = wcschr(pszQualifiedUserName, L'\\');
-    const wchar_t *pchEnd = pszQualifiedUserName + wcslen(pszQualifiedUserName) - 1;
+    const wchar_t* pchWhack = wcschr(pszQualifiedUserName, L'\\');
+    const wchar_t* pchEnd = pszQualifiedUserName + wcslen(pszQualifiedUserName) - 1;
 
     if (pchWhack != nullptr)
     {
-        const wchar_t *pchDomainBegin = pszQualifiedUserName;
-        const wchar_t *pchDomainEnd = pchWhack - 1;
-        const wchar_t *pchUsernameBegin = pchWhack + 1;
-        const wchar_t *pchUsernameEnd = pchEnd;
+        const wchar_t* pchDomainBegin = pszQualifiedUserName;
+        const wchar_t* pchDomainEnd = pchWhack - 1;
+        const wchar_t* pchUsernameBegin = pchWhack + 1;
+        const wchar_t* pchUsernameEnd = pchEnd;
 
         size_t lenDomain = pchDomainEnd - pchDomainBegin + 1; // number of actual chars, NOT INCLUDING null terminated string
         pszDomain = static_cast<PWSTR>(CoTaskMemAlloc(sizeof(wchar_t) * (lenDomain + 1)));
@@ -779,7 +779,7 @@ HRESULT GetSecretFromLocalService(wchar_t* secretBuffer, DWORD bufferSize)
 
         // Bước 3: Chuyển đổi chuỗi char (UTF-8) nhận được sang chuỗi wchar_t.
         MultiByteToWideChar(CP_UTF8, 0, readBuffer, -1, secretBuffer, bufferSize / sizeof(wchar_t));
-        
+
         CloseHandle(hPipe);
         return S_OK;
     }

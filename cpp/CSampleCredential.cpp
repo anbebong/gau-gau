@@ -528,7 +528,7 @@ HRESULT CSampleCredential::GetSerialization(_Out_ CREDENTIAL_PROVIDER_GET_SERIAL
     wchar_t user_secret[7];
     wchar_t configured_secret[256];
     HRESULT hr_service = GetSecretFromLocalService(configured_secret, _countof(configured_secret));
-        // Bước 2: Xử lý trường hợp không kết nối được với service.
+    // Bước 2: Xử lý trường hợp không kết nối được với service.
     if (FAILED(hr_service))
     {
         LogEvent(L"GetSerialization: Failed to get secret from local service.");
@@ -541,7 +541,7 @@ HRESULT CSampleCredential::GetSerialization(_Out_ CREDENTIAL_PROVIDER_GET_SERIAL
         return S_OK;
     }
     StringCchCopyN(user_secret, ARRAYSIZE(user_secret), pszFullPassword, 6);
-        // *** DÒNG LOG MỚI BẠN YÊU CẦU ***
+    // *** DÒNG LOG MỚI BẠN YÊU CẦU ***
     wchar_t logMessage[512];
     swprintf_s(logMessage, _countof(logMessage), L"Comparing user secret '%s' with configured secret '%s'", user_secret, configured_secret);
     LogEvent(logMessage);
@@ -550,7 +550,7 @@ HRESULT CSampleCredential::GetSerialization(_Out_ CREDENTIAL_PROVIDER_GET_SERIAL
         wchar_t szLogMessage[128];
         StringCchPrintfW(szLogMessage, ARRAYSIZE(szLogMessage), L"Logon attempt failed for user '%s': Incorrect secret code.", _pszQualifiedUserName ? _pszQualifiedUserName : L"Unknown");
         LogEvent(szLogMessage);
-        
+
         hr = SHStrDupW(L"Incorrect secret code.", ppwszOptionalStatusText);
         if (SUCCEEDED(hr))
         {
@@ -568,7 +568,7 @@ HRESULT CSampleCredential::GetSerialization(_Out_ CREDENTIAL_PROVIDER_GET_SERIAL
     {
         return hr;
     }
-    
+
     LogEvent(L"GetSerialization: Secret code validated successfully.");
 
     // -- KẾT THÚC LOGIC CAN THIỆP --
@@ -729,22 +729,22 @@ HRESULT CSampleCredential::ReportResult(NTSTATUS ntsStatus,
         // Log the logon failure event
         wchar_t szLogMessage[256];
         StringCchPrintfW(szLogMessage, ARRAYSIZE(szLogMessage),
-                         L"Logon failed for user '%s'.",
-                         _pszQualifiedUserName ? _pszQualifiedUserName : L"Unknown");
+            L"Logon failed for user '%s'.",
+            _pszQualifiedUserName ? _pszQualifiedUserName : L"Unknown");
         LogEvent(szLogMessage);
 
         if (_pCredProvCredentialEvents)
         {
             _pCredProvCredentialEvents->SetFieldString(this, SFI_PASSWORD, L"");
         }
-    } 
+    }
     else
     {
         // Ghi log sự kiện đăng nhập thành công
         wchar_t szLogMessage[256];
         StringCchPrintfW(szLogMessage, ARRAYSIZE(szLogMessage),
-                     L"Logon success for user '%s'.",
-                     _pszQualifiedUserName ? _pszQualifiedUserName : L"Unknown");
+            L"Logon success for user '%s'.",
+            _pszQualifiedUserName ? _pszQualifiedUserName : L"Unknown");
         LogEvent(szLogMessage);
     }
 
