@@ -27,7 +27,7 @@ public:
     CClassFactory(REFCLSID clsid) : _cRef(1), _clsid(clsid) {}
 
     // IUnknown
-    IFACEMETHODIMP QueryInterface(__in REFIID riid, __deref_out void **ppv)
+    IFACEMETHODIMP QueryInterface(__in REFIID riid, __deref_out void** ppv)
     {
         static const QITAB qit[] =
         {
@@ -51,7 +51,7 @@ public:
     }
 
     // IClassFactory
-    IFACEMETHODIMP CreateInstance(__in IUnknown* pUnkOuter, __in REFIID riid, __deref_out void **ppv)
+    IFACEMETHODIMP CreateInstance(__in IUnknown* pUnkOuter, __in REFIID riid, __deref_out void** ppv)
     {
         if (pUnkOuter)
         {
@@ -89,7 +89,7 @@ private:
     CLSID _clsid;
 };
 
-HRESULT CClassFactory_CreateInstance(__in REFCLSID rclsid, __in REFIID riid, __deref_out void **ppv)
+HRESULT CClassFactory_CreateInstance(__in REFCLSID rclsid, __in REFIID riid, __deref_out void** ppv)
 {
     *ppv = NULL;
     if (rclsid == CLSID_CSample || rclsid == CLSID_CSampleProviderFilter)
@@ -126,7 +126,7 @@ STDAPI DllGetClassObject(__in REFCLSID rclsid, __in REFIID riid, __deref_out voi
     return CClassFactory_CreateInstance(rclsid, riid, ppv);
 }
 
-STDAPI_(BOOL) DllMain(__in HINSTANCE hinstDll, __in DWORD dwReason, __in void *)
+STDAPI_(BOOL) DllMain(__in HINSTANCE hinstDll, __in DWORD dwReason, __in void*)
 {
     switch (dwReason)
     {
