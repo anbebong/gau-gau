@@ -15,7 +15,7 @@ function protectAdminDashboard() {
     }
 }
 // Cấu hình base URL API
-const API_BASE_URL = 'http://localhost:8082/api';
+const API_BASE_URL = 'http://192.168.15.12:8082/api';
 
 function apiUrl(path) {
     if (path.startsWith('/')) path = path.slice(1);

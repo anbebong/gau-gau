@@ -13,6 +13,7 @@ import (
 	"net/http"
 	"os"
 	"sync"
+	"time"
 
 	"github.com/google/uuid"
 	_ "github.com/mattn/go-sqlite3"
@@ -61,9 +62,12 @@ func InitAgentDB(path string) (*sql.DB, error) {
 	}
 	if count == 0 {
 		adminID := uuid.NewString()
+		// timeCreated := "2024-01-01T00:00:00Z"
+		timeCreated := time.Now().Format("2006-01-02T15:04:05Z")
+
 		fmt.Printf("[DEBUG] Creating default admin user with id: %s, username: admin, password: 1\n", adminID)
 		_, err = db.Exec(`INSERT INTO users (id, username, password, email, full_name, role, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-			adminID, "admin", "1", "admin@example.com", "ADMIN", "admin", "2024-01-01T00:00:00Z", "2024-01-01T00:00:00Z")
+			adminID, "admin", "1", "admin@example.com", "ADMIN", "admin", timeCreated, timeCreated)
 		if err != nil {
 			fmt.Printf("[DEBUG] Failed to create admin user: %v\n", err)
 			return nil, err
@@ -121,7 +125,7 @@ func main() {
 	// Static web server
 	go func() {
 		fmt.Println("Serving static web at http://localhost:8080/")
-		err := http.ListenAndServe(":8080", http.FileServer(http.Dir("web")))
+		err := http.ListenAndServe(":8080", http.FileServer(http.Dir("../web")))
 		if err != nil {
 			logutil.CoreError("Static web server error: %v", err)
 			os.Exit(1)
