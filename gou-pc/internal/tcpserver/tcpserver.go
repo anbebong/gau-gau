@@ -30,7 +30,7 @@ func UpdateAgentStatusAndLog(cfg *config.ServerConfig) {
 	for {
 		offline := []string{}
 		clients, _ := agent.LoadClients()
-		fmt.Printf("[DEBUG] Loaded %d clients from DB\n", len(clients))
+		// fmt.Printf("[DEBUG] Loaded %d clients from DB\n", len(clients))
 		now := time.Now()
 		helloLastSeenMu.RLock()
 		for i, c := range clients {
