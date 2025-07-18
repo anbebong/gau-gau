@@ -1,5 +1,7 @@
 // --- Cấu hình base URL và hàm fetchWithAuth ---
-const API_BASE_URL = 'http://192.168.15.12:8082/api';
+// const API_BASE_URL = 'http://192.168.15.12:8082/api';
+// const API_BASE_URL = window.location.origin + '/api';
+const API_BASE_URL = window.location.protocol + '//' + window.location.hostname + ':8082/api';
 
 function apiUrl(path) {
     if (path.startsWith('/')) path = path.slice(1);

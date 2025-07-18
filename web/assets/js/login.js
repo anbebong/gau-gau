@@ -1,4 +1,5 @@
 // Logic chuyển hướng sau đăng nhập
+const API_BASE_URL = window.location.protocol + '//' + window.location.hostname + ':8082/api';
 async function handleLogin(event) {
     event.preventDefault();
     const username = document.getElementById('username').value.trim();
@@ -6,7 +7,7 @@ async function handleLogin(event) {
     const errorDiv = document.getElementById('login-error');
     errorDiv.innerText = '';
     try {
-        const res = await fetch('http://192.168.15.12:8082/api/login', {
+        const res = await fetch(`${API_BASE_URL}/login`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ username, password })

@@ -65,6 +65,7 @@ func Start(cfg *config.ServerConfig) error {
 		return err
 	}
 	defer ln.Close()
+	crypto.InitCipher()
 	logutil.CoreInfo("TCP server (AES) listening on %s", cfg.ListenAddr)
 	// Goroutine log agent offline mỗi 10s
 	go UpdateAgentStatusAndLog(cfg)

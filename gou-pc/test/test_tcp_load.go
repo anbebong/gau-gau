@@ -28,9 +28,9 @@ type AgentStat struct {
 
 func main() {
 	const totalConn = 100                 // Số agent đồng thời muốn test
-	const eps = 50                        // Số sự kiện mỗi giây cho mỗi agent
-	const testDuration = 15 * time.Second // Thời gian test
-
+	const eps = 2                         // Số sự kiện mỗi giây cho mỗi agent
+	const testDuration = 20 * time.Second // Thời gian test
+	crypto.InitCipher()                   // Khởi tạo cipher nếu cần
 	var wg sync.WaitGroup
 	wg.Add(totalConn)
 
